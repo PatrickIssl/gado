@@ -1,0 +1,35 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M4 12c0-2 1.5-4 4-4.5C10 7 12 5 14 5c2.5 0 4 2 4 4.5 0 3-2 5.5-5 6.5"/>
+        </svg>
+      </div>
+      <h1>Concluir cadastro</h1>
+      <p>Vincule sua fazenda para começar a usar o sistema</p>
+    </div>
+
+    @if (erro) {
+      <div class="alert alert-error">{{ erro }}</div>
+    }
+
+    <form (ngSubmit)="concluir()">
+      <label>
+        Nome da fazenda
+        <input [(ngModel)]="nomeFazenda" name="nomeFazenda" required />
+      </label>
+      <label>
+        Seu nome
+        <input [(ngModel)]="nome" name="nome" required />
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+        {{ loading ? 'Salvando...' : 'Concluir' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      <button type="button" class="link-btn" (click)="sair()">Sair e usar outra conta</button>
+    </p>
+  </div>
+</div>

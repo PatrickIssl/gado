@@ -1,10 +1,14 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Bezerro, BezerroFormData } from '../models/bezerro.model';
 
 @Injectable({ providedIn: 'root' })
 export class BezerroService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private auth: AuthService
+  ) {}
 
   async listar(): Promise<Bezerro[]> {
     const { data, error } = await this.supabase.db
@@ -20,6 +24,7 @@ export class BezerroService {
     const { data, error } = await this.supabase.db
       .from('bezerros')
       .insert({
+        fazenda_id: this.auth.requireFazendaId(),
         vaca_id: form.vaca_id,
         nome: form.nome,
         sexo: form.sexo,

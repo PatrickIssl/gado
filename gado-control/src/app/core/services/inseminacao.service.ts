@@ -1,12 +1,16 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Inseminacao, InseminacaoFormData } from '../models/inseminacao.model';
 import { StatusVaca, Vaca } from '../models/vaca.model';
 import { estaEmLactacao } from '../utils/ciclo-vaca.utils';
 
 @Injectable({ providedIn: 'root' })
 export class InseminacaoService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private auth: AuthService
+  ) {}
 
   async listar(): Promise<Inseminacao[]> {
     const { data, error } = await this.supabase.db
@@ -33,6 +37,7 @@ export class InseminacaoService {
     const { data: insem, error } = await this.supabase.db
       .from('inseminacoes')
       .insert({
+        fazenda_id: this.auth.requireFazendaId(),
         vaca_id: form.vaca_id,
         data_inseminacao: form.data_inseminacao,
         observacoes: form.observacoes ?? null,

@@ -1,0 +1,48 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <path d="M4 12c0-2 1.5-4 4-4.5C10 7 12 5 14 5c2.5 0 4 2 4 4.5 0 3-2 5.5-5 6.5"/>
+        </svg>
+      </div>
+      <h1>Criar conta</h1>
+      <p>Cadastre sua fazenda no GadoControl</p>
+    </div>
+
+    @if (erro) {
+      <div class="alert alert-error">{{ erro }}</div>
+    }
+    @if (sucesso) {
+      <div class="alert alert-success">{{ sucesso }}</div>
+    }
+
+    <form (ngSubmit)="cadastrar()">
+      <label>
+        Nome da fazenda
+        <input [(ngModel)]="nomeFazenda" name="nomeFazenda" required placeholder="Ex: Fazenda Santa Maria" />
+      </label>
+      <label>
+        Seu nome
+        <input [(ngModel)]="nome" name="nome" required placeholder="Ex: João Silva" />
+      </label>
+      <label>
+        E-mail
+        <input type="email" [(ngModel)]="email" name="email" required autocomplete="email" />
+      </label>
+      <label>
+        Senha
+        <input type="password" [(ngModel)]="senha" name="senha" required autocomplete="new-password" minlength="6" />
+        <small class="field-hint">Mínimo 6 caracteres</small>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+        {{ loading ? 'Criando...' : 'Criar conta' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Já tem conta?
+      <a routerLink="/login">Entrar</a>
+    </p>
+  </div>
+</div>

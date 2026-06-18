@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { CioService } from './cio.service';
 import { StatusVaca, Vaca, VacaFormData } from '../models/vaca.model';
 import {
@@ -15,6 +16,7 @@ import { todayISO } from '../utils/date.utils';
 export class VacaService {
   constructor(
     private supabase: SupabaseService,
+    private auth: AuthService,
     private cioService: CioService
   ) {}
 
@@ -81,6 +83,7 @@ export class VacaService {
   private montarPayload(form: VacaFormData): Record<string, unknown> {
     const doente = form.doente ?? false;
     const payload: Record<string, unknown> = {
+      fazenda_id: this.auth.requireFazendaId(),
       numero: form.numero,
       nome: form.nome,
       raca: form.raca ?? '',

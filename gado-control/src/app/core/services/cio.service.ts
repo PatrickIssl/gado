@@ -1,10 +1,14 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 import { Cio, CioFormData } from '../models/cio.model';
 
 @Injectable({ providedIn: 'root' })
 export class CioService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(
+    private supabase: SupabaseService,
+    private auth: AuthService
+  ) {}
 
   async listar(): Promise<Cio[]> {
     const { data, error } = await this.supabase.db
@@ -31,6 +35,7 @@ export class CioService {
     const { data, error } = await this.supabase.db
       .from('cios')
       .insert({
+        fazenda_id: this.auth.requireFazendaId(),
         vaca_id: form.vaca_id,
         data_cio: form.data_cio,
         observacoes: form.observacoes ?? null,
