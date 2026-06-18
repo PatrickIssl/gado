@@ -1,5 +1,9 @@
 name: Deploy GitHub Pages
 
+# ⚠️ ANTES DO PRIMEIRO DEPLOY (obrigatório, uma vez):
+# GitHub → Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# https://github.com/PatrickIssl/gado/settings/pages
+
 on:
   push:
     branches: [main, master]
@@ -20,14 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Requer Pages habilitado em Settings → Pages → Source: GitHub Actions
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v5
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: gado-control/package-lock.json
 
@@ -37,7 +36,7 @@ jobs:
 
       - name: Build
         working-directory: gado-control
-        run: npx ng build --configuration production --base-href "${{ steps.pages.outputs.base_path }}/"
+        run: npm run build:ghpages
 
       - name: Inject Supabase env
         working-directory: gado-control
