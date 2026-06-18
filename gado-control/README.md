@@ -56,15 +56,19 @@ Acesse `http://localhost:4200`
 
 ## Deploy no GitHub Pages (gratuito)
 
-1. Crie um repositório no GitHub (ex: `gado-control`)
+1. Crie um repositório no GitHub (ex: `gado`)
 2. Envie o código para a branch `main`
-3. Em **Settings → Pages → Build and deployment**, selecione **GitHub Actions**
-4. Em **Settings → Secrets → Actions**, adicione:
+3. **Habilite o GitHub Pages** (obrigatório — senão o workflow falha):
+   - **Settings → Pages → Build and deployment**
+   - **Source:** selecione **GitHub Actions** (não "Deploy from a branch")
+4. Em **Settings → Secrets and variables → Actions**, adicione:
    - `SUPABASE_URL` — URL do Supabase
    - `SUPABASE_KEY` — chave anon do Supabase
-5. O workflow `.github/workflows/deploy.yml` faz o deploy automaticamente
+5. Faça push na `main` ou rode o workflow manualmente em **Actions → Deploy GitHub Pages → Run workflow**
 
-> Se o nome do repositório for diferente de `gado-control`, altere o `baseHref` em `angular.json` (produção) para `/<nome-do-repo>/`.
+URL do site: `https://<seu-usuario>.github.io/gado/`
+
+> O `baseHref` é definido automaticamente pelo workflow a partir do nome do repositório. Se renomear o repo, não precisa alterar código.
 
 ## Estrutura
 

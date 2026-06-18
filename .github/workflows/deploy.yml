@@ -20,9 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Requer Pages habilitado em Settings → Pages → Source: GitHub Actions
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: gado-control/package-lock.json
 
@@ -32,7 +37,7 @@ jobs:
 
       - name: Build
         working-directory: gado-control
-        run: npm run build:ghpages
+        run: npx ng build --configuration production --base-href "${{ steps.pages.outputs.base_path }}/"
 
       - name: Inject Supabase env
         working-directory: gado-control
@@ -44,9 +49,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

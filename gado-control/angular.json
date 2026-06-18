@@ -51,7 +51,7 @@
                 }
               ],
               "outputHashing": "all",
-              "baseHref": "/gado-control/",
+              "baseHref": "/gado/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
