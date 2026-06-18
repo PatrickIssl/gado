@@ -1,0 +1,126 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Reprodução</p>
+      <h1>Inseminações</h1>
+      <p class="subtitle">{{ subtituloListagem }}</p>
+    </div>
+    <button class="btn btn-primary" (click)="abrirModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Nova Inseminação
+    </button>
+  </header>
+
+  @if (erro) {
+    <div class="alert alert-error">{{ erro }}</div>
+  }
+
+  <div class="info-box info-box--blue">
+    <span class="info-icon">ℹ</span>
+    <div>
+      <strong>Regra dos 21 dias:</strong> Após inseminação, aguarde 21 dias. Se a vaca não repetir o cio, é provável que esteja prenha. Se repetir, registre nova inseminação.
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <select [(ngModel)]="filtro" (ngModelChange)="onFiltroChange()">
+      <option value="todos">Todas as inseminações</option>
+      <option value="pendentes">Verificar prenhez (21d)</option>
+    </select>
+  </div>
+
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Carregando inseminações...</span>
+    </div>
+  } @else if (inseminacoesExibidas.length === 0) {
+    <div class="empty">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="24" height="24">
+          <path d="m9 2 3 3M11 4 8 7l9 9 3-3-9-9z"/>
+        </svg>
+      </div>
+      @if (filtro === 'pendentes') {
+        <strong>Nenhuma inseminação pendente</strong>
+        <p>Todas as inseminações já foram verificadas ou ainda não chegaram aos 21 dias.</p>
+      } @else {
+        <strong>Nenhuma inseminação registrada</strong>
+        <p>Registre a primeira inseminação para acompanhar o ciclo reprodutivo.</p>
+        <button class="btn btn-primary" (click)="abrirModal()">+ Nova Inseminação</button>
+      }
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Vaca</th>
+            <th>Data Inseminação</th>
+            <th>Verificar em (21d)</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of inseminacoesExibidas; track i.id) {
+            <tr [class.row-action]="classeStatus(i) === 'action'">
+              <td><strong class="cell-name">{{ nomeVaca(i.vaca_id) }}</strong></td>
+              <td>{{ formatDate(i.data_inseminacao) }}</td>
+              <td>{{ formatDate(dataVerificacao(i.data_inseminacao)) }}</td>
+              <td>
+                <span class="status-tag" [class]="classeStatus(i)">
+                  {{ statusInseminacao(i) }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                @if (!i.confirmada_prenhez && !i.repetiu_cio) {
+                  <button class="btn btn-sm btn-primary" (click)="confirmarPrenhez(i)">
+                    Confirmar Prenhez
+                  </button>
+                  <button class="btn btn-sm btn-outline" (click)="marcarRepetiuCio(i)">
+                    Repetiu Cio
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (modalAberto) {
+  <div class="modal-overlay" (click)="fecharModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Nova Inseminação</h2>
+      <p class="modal-subtitle">Registre a data e a vaca inseminada</p>
+      <form (ngSubmit)="salvar()">
+        <label>
+          Vaca
+          <select [(ngModel)]="form.vaca_id" name="vaca_id" required>
+            <option value="">Selecione...</option>
+            @for (v of vacasDisponiveis; track v.id) {
+              <option [value]="v.id">{{ v.nome }} (#{{ v.numero }})</option>
+            }
+          </select>
+        </label>
+        <label>
+          Data da Inseminação
+          <input type="date" [(ngModel)]="form.data_inseminacao" name="data" required />
+        </label>
+        <label>
+          Observações
+          <input [(ngModel)]="form.observacoes" name="obs" placeholder="Opcional" />
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" (click)="fecharModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

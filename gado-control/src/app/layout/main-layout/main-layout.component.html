@@ -1,0 +1,80 @@
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M4 12c0-2 1.5-4 4-4.5C10 7 12 5 14 5c2.5 0 4 2 4 4.5 0 3-2 5.5-5 6.5"/>
+            <circle cx="10" cy="10" r="0.75" fill="currentColor"/>
+            <circle cx="15" cy="9.5" r="0.75" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-name">GadoControl</span>
+          <span class="logo-tag">Gestão de rebanho</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <span class="nav-label">Menu</span>
+        @for (item of navItems; track item.path) {
+          <a class="nav-item" [routerLink]="item.path" routerLinkActive="active">
+            <span class="nav-icon">
+              @switch (item.icon) {
+                @case ('grid') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                  </svg>
+                }
+                @case ('cow') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M4 12c0-2 1.5-4 4-4.5C10 7 12 5 14 5c2.5 0 4 2 4 4.5 0 3-2 5.5-5 6.5"/>
+                    <circle cx="10" cy="10" r="0.75" fill="currentColor"/>
+                    <circle cx="15" cy="9.5" r="0.75" fill="currentColor"/>
+                  </svg>
+                }
+                @case ('syringe') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="m9 2 3 3M11 4 8 7l9 9 3-3-9-9z"/>
+                    <path d="M14 7l3 3M5 16l3 3M2 19l3 3"/>
+                  </svg>
+                }
+                @case ('calf') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M6 14c-1 2-1 4 0 5.5M18 14c1 2 1 4 0 5.5"/>
+                    <path d="M8 10c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5"/>
+                    <circle cx="10" cy="9" r="0.6" fill="currentColor"/>
+                    <circle cx="14" cy="9" r="0.6" fill="currentColor"/>
+                  </svg>
+                }
+              }
+            </span>
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="footer-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="18" height="18">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          <div>
+            <span class="footer-title">Ciclo completo</span>
+            <span class="footer-desc">Vacas · Inseminação · Bezerros</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="content-inner">
+      <router-outlet />
+    </div>
+  </main>
+</div>

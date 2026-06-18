@@ -1,0 +1,65 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: gado-control/package-lock.json
+
+      - name: Install
+        working-directory: gado-control
+        run: npm ci
+
+      - name: Build
+        working-directory: gado-control
+        run: npm run build:ghpages
+
+      - name: Inject Supabase env
+        working-directory: gado-control
+        run: |
+          if [ -n "$SUPABASE_URL" ]; then
+            sed -i "s|SUA_URL_SUPABASE|$SUPABASE_URL|g" dist/gado-control/browser/main*.js
+            sed -i "s|SUA_CHAVE_ANON_SUPABASE|$SUPABASE_KEY|g" dist/gado-control/browser/main*.js
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gado-control/dist/gado-control/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

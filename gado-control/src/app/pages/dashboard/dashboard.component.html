@@ -1,0 +1,130 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Bem-vindo de volta</p>
+      <h1>Painel</h1>
+      <p class="subtitle">Visão geral do rebanho e alertas do dia</p>
+    </div>
+  </header>
+
+  @if (erro) {
+    <div class="alert alert-error">{{ erro }}</div>
+  }
+
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Carregando dados do rebanho...</span>
+    </div>
+  } @else {
+    <div class="stats-grid">
+      @for (stat of stats; track stat.label) {
+        <a
+          class="stat-card stat-card--clickable"
+          [class]="'stat-card--' + stat.accent"
+          [routerLink]="stat.route"
+          [queryParams]="stat.queryParams ?? null"
+        >
+          <div class="stat-icon">
+            @switch (stat.icon) {
+              @case ('cow') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 12c0-2 1.5-4 4-4.5C10 7 12 5 14 5c2.5 0 4 2 4 4.5 0 3-2 5.5-5 6.5"/></svg> }
+              @case ('heart') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> }
+              @case ('milk') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M8 2h8l1 4H7l1-4z"/><path d="M7 6v12a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3V6"/></svg> }
+              @case ('calf') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M6 14c-1 2-1 4 0 5.5M18 14c1 2 1 4 0 5.5"/><path d="M8 10c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5"/></svg> }
+              @case ('check') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> }
+              @case ('protocol') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg> }
+            }
+          </div>
+          <div class="stat-body">
+            <span class="stat-value">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
+        </a>
+      }
+    </div>
+
+    <div class="dashboard-grid">
+      @if (inseminacoesPendentes.length > 0) {
+        <section class="panel panel--alert">
+          <div class="panel-header">
+            <div class="panel-icon panel-icon--amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Inseminações para verificar</h2>
+              <p class="panel-desc">21 dias sem repetir o cio — provável prenhez</p>
+            </div>
+          </div>
+          <div class="alert-list">
+            @for (i of inseminacoesPendentes; track i.id) {
+              <div class="alert-item">
+                <span class="alert-dot"></span>
+                <div>
+                  <strong>{{ nomeVaca(i.vaca_id) }}</strong>
+                  <span>Inseminada em {{ formatDate(i.data_inseminacao) }}</span>
+                </div>
+                <a class="alert-link" routerLink="/inseminacoes" [queryParams]="{ filtro: 'pendentes' }">Verificar →</a>
+              </div>
+            }
+          </div>
+        </section>
+      } @else {
+        <section class="panel panel--success">
+          <div class="panel-header">
+            <div class="panel-icon panel-icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Tudo em dia</h2>
+              <p class="panel-desc">Nenhuma inseminação pendente de verificação</p>
+            </div>
+          </div>
+        </section>
+      }
+
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-icon panel-icon--blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <div>
+            <h2>Ações rápidas</h2>
+            <p class="panel-desc">Acesso direto às principais funções</p>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <a class="quick-action" routerLink="/vacas">
+            <span class="qa-icon qa-icon--green">+</span>
+            <div>
+              <strong>Cadastrar vaca</strong>
+              <span>Novo animal no rebanho</span>
+            </div>
+          </a>
+          <a class="quick-action" routerLink="/inseminacoes">
+            <span class="qa-icon qa-icon--blue">↓</span>
+            <div>
+              <strong>Nova inseminação</strong>
+              <span>Registrar cobertura</span>
+            </div>
+          </a>
+          <a class="quick-action" routerLink="/bezerros">
+            <span class="qa-icon qa-icon--amber">◎</span>
+            <div>
+              <strong>Ver bezerros</strong>
+              <span>Programa de leite</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </div>
+  }
+</div>

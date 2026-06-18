@@ -1,0 +1,112 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Criação</p>
+      <h1>Bezerros</h1>
+      <p class="subtitle">{{ subtituloListagem }}</p>
+    </div>
+  </header>
+
+  @if (erro) {
+    <div class="alert alert-error">{{ erro }}</div>
+  }
+
+  <div class="info-box info-box--green">
+    <span class="info-icon">🥛</span>
+    <div>
+      <strong>Programa de leite (90 dias):</strong>
+      1º mês: 6L/dia (3+3) · 2º mês: 4L/dia (2+2) · 3º mês: 3L manhã (desmame) · 4º mês: sem leite
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <select [(ngModel)]="filtro" (ngModelChange)="onFiltroChange()">
+      <option value="todos">Todos os bezerros</option>
+      <option value="bezerreiro">No Bezerreiro</option>
+      <option value="desmamados">Desmamados</option>
+    </select>
+  </div>
+
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Carregando bezerros...</span>
+    </div>
+  } @else if (filtrados.length === 0) {
+    <div class="empty">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="24" height="24">
+          <path d="M6 14c-1 2-1 4 0 5.5M18 14c1 2 1 4 0 5.5"/>
+        </svg>
+      </div>
+      <strong>Nenhum bezerro encontrado</strong>
+      <p>Bezerros são cadastrados automaticamente ao registrar um parto.</p>
+    </div>
+  } @else {
+    <div class="card-list">
+      @for (b of filtrados; track b.id) {
+        <article class="bezerro-card">
+          <div class="card-top">
+            <div class="card-identity">
+              <div class="avatar">{{ b.nome.charAt(0).toUpperCase() }}</div>
+              <div>
+                <strong class="card-name">{{ b.nome }}</strong>
+                <span class="card-meta">
+                  {{ b.sexo === 'macho' ? 'Macho' : 'Fêmea' }} · Mãe: {{ nomeMae(b.vaca_id) }}
+                </span>
+              </div>
+            </div>
+            <div class="card-actions">
+              @if (!estaDesmamado(b.data_nascimento) && !b.desmamado) {
+                <button class="btn btn-sm btn-outline" (click)="marcarDesmamado(b)">Desmamar</button>
+              }
+              <button class="btn-icon danger" (click)="excluir(b)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="progress-bar-wrap">
+            <div class="progress-label">
+              <span>Progresso no bezerreiro</span>
+              <span>{{ diasNoBezerreiro(b.data_nascimento) }} / 90 dias</span>
+            </div>
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                [style.width.%]="Math.min(100, (diasNoBezerreiro(b.data_nascimento) / 90) * 100)"
+              ></div>
+            </div>
+          </div>
+
+          <div class="card-grid">
+            <div class="info-item">
+              <span class="label">Nascimento</span>
+              <span>{{ formatDate(b.data_nascimento) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Saída do bezerreiro</span>
+              <span>{{ formatDate(dataSaida(b.data_nascimento)) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Dias restantes</span>
+              <span>{{ diasRestantes(b.data_nascimento) > 0 ? diasRestantes(b.data_nascimento) + 'd' : 'Concluído' }}</span>
+            </div>
+          </div>
+
+          <div class="leite-box" [class.desmamado]="estaDesmamado(b.data_nascimento) || b.desmamado">
+            <div class="leite-header">
+              <span class="leite-fase">{{ programaLeite(b.data_nascimento).fase }}</span>
+              @if (programaLeite(b.data_nascimento).litrosTotal > 0) {
+                <span class="leite-total">{{ programaLeite(b.data_nascimento).litrosTotal }}L/dia</span>
+              }
+            </div>
+            <div class="leite-desc">{{ programaLeite(b.data_nascimento).descricao }}</div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>
