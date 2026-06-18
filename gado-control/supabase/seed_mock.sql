@@ -1,6 +1,6 @@
 -- =============================================================================
 -- GadoControl — Dados mockados para testes
--- Execute no SQL Editor do Supabase (após schema.sql, migration_prenhez.sql e migration_cios_protocolo.sql)
+-- Execute no SQL Editor do Supabase (após schema.sql, migration_prenhez.sql, migration_cios_protocolo.sql e migration_saude_prenhezes.sql)
 --
 -- Usa CURRENT_DATE: as datas se ajustam ao dia em que você rodar o script.
 -- =============================================================================
@@ -17,7 +17,8 @@
 INSERT INTO vacas (
   id, numero, nome, raca, status, data_parto,
   data_ultima_inseminacao, data_inseminacao_prenhez,
-  data_inicio_protocolo_iatf, dias_protocolo_iatf
+  data_inicio_protocolo_iatf, dias_protocolo_iatf,
+  total_prenhezes, doente, doenca
 )
 VALUES
   -- 1) Lactação recente — ainda não chegou nos 40 dias para inseminar (+ bezerro deste parto)
@@ -25,15 +26,17 @@ VALUES
     '11111111-1111-1111-1111-111111111101',
     '0001', 'Estrela', 'Holandesa', 'lactacao',
     CURRENT_DATE - 15,
-    NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL,
+    0, FALSE, NULL
   ),
 
-  -- 2) Passou 40d do parto, SEM cio — Registrar Cio / Protocolo IATF
+  -- 2) Passou 40d do parto, SEM cio — Registrar Cio / Protocolo IATF (doente)
   (
     '11111111-1111-1111-1111-111111111102',
     '0002', 'Mimosa', 'Holandesa', 'lactacao',
     CURRENT_DATE - 85,
-    NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL,
+    2, TRUE, 'Mastite leve'
   ),
 
   -- 3) Cio registrado — botão Inseminar
@@ -41,7 +44,8 @@ VALUES
     '11111111-1111-1111-1111-111111111103',
     '0003', 'Flor', 'Jersey', 'lactacao',
     CURRENT_DATE - 45,
-    NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL,
+    1, FALSE, NULL
   ),
 
   -- 4) Inseminada, aguardando verificar prenhez (21d)
@@ -50,7 +54,8 @@ VALUES
     '0004', 'Luna', 'Gir', 'lactacao',
     CURRENT_DATE - 75,
     CURRENT_DATE - 22,
-    NULL, NULL, NULL
+    NULL, NULL, NULL,
+    3, FALSE, NULL
   ),
 
   -- 5) Prenha + lactação
@@ -59,7 +64,8 @@ VALUES
     '0005', 'Pérola', 'Holandesa', 'prenha',
     CURRENT_DATE - 100,
     CURRENT_DATE - 80,
-    CURRENT_DATE - 80, NULL, NULL
+    CURRENT_DATE - 80, NULL, NULL,
+    4, FALSE, NULL
   ),
 
   -- 6) Prenha — parto iminente
@@ -68,7 +74,8 @@ VALUES
     '0006', 'Jade', 'Girolanda', 'prenha',
     CURRENT_DATE - 400,
     CURRENT_DATE - 282,
-    CURRENT_DATE - 282, NULL, NULL
+    CURRENT_DATE - 282, NULL, NULL,
+    5, FALSE, NULL
   ),
 
   -- 7) Período SECA
@@ -76,7 +83,8 @@ VALUES
     '11111111-1111-1111-1111-111111111107',
     '0007', 'Branca', 'Holandesa', 'seca',
     CURRENT_DATE - 250,
-    NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL,
+    3, FALSE, NULL
   ),
 
   -- 8) PRÉ-PARTO
@@ -84,7 +92,8 @@ VALUES
     '11111111-1111-1111-1111-111111111108',
     '0008', 'Canela', 'Jersey', 'pre_parto',
     CURRENT_DATE - 285,
-    NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL,
+    2, FALSE, NULL
   ),
 
   -- 9) Protocolo IATF ativo (dia 5 de 11) — deve inseminar ao vencer
@@ -93,7 +102,8 @@ VALUES
     '0009', 'Dama', 'Holandesa', 'em_protocolo_iatf',
     CURRENT_DATE - 52,
     NULL, NULL,
-    CURRENT_DATE - 5, 11
+    CURRENT_DATE - 5, 11,
+    1, FALSE, NULL
   ),
 
   -- 10) Protocolo vencido — ao carregar, sai de protocolo e exige inseminação
@@ -102,7 +112,8 @@ VALUES
     '0010', 'Nova', 'Jersey', 'em_protocolo_iatf',
     CURRENT_DATE - 60,
     NULL, NULL,
-    CURRENT_DATE - 12, 10
+    CURRENT_DATE - 12, 10,
+    0, FALSE, NULL
   )
 ON CONFLICT (id) DO UPDATE SET
   numero = EXCLUDED.numero,
@@ -113,7 +124,10 @@ ON CONFLICT (id) DO UPDATE SET
   data_ultima_inseminacao = EXCLUDED.data_ultima_inseminacao,
   data_inseminacao_prenhez = EXCLUDED.data_inseminacao_prenhez,
   data_inicio_protocolo_iatf = EXCLUDED.data_inicio_protocolo_iatf,
-  dias_protocolo_iatf = EXCLUDED.dias_protocolo_iatf;
+  dias_protocolo_iatf = EXCLUDED.dias_protocolo_iatf,
+  total_prenhezes = EXCLUDED.total_prenhezes,
+  doente = EXCLUDED.doente,
+  doenca = EXCLUDED.doenca;
 
 -- -----------------------------------------------------------------------------
 -- CIOS (histórico por vaca)

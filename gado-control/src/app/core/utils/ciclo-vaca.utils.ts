@@ -10,6 +10,13 @@ const DIAS_VERIFICAR_PRENHEZ = 21;
 const DIAS_GESTACAO = 283;
 const DIAS_PROTOCOLO_IATF_PADRAO = 11;
 
+const LABEL_SECAGEM = 'Secagem';
+const LABEL_PREVISAO_PARTO = 'Previsão do parto';
+
+function dataSecagem(datas: DatasCiclo): string | null {
+  return datas.inicioSeca ?? datas.fimLactacao;
+}
+
 export function ultimoCio(vaca: Vaca): string | null {
   return vaca.ultimo_cio ?? null;
 }
@@ -150,7 +157,12 @@ export function podeRegistrarCio(vaca: Vaca): boolean {
 }
 
 export function precisaProtocoloIatf(vaca: Vaca): boolean {
-  if (ehPrenha(vaca) || emProtocoloAtivo(vaca) || protocoloEncerradoPendenteInseminacao(vaca)) {
+  if (
+    ehPrenha(vaca) ||
+    emProtocoloAtivo(vaca) ||
+    protocoloEncerradoPendenteInseminacao(vaca) ||
+    aguardandoVerificarPrenhez(vaca)
+  ) {
     return false;
   }
   const datas = calcularDatasCiclo(vaca);
@@ -180,7 +192,7 @@ export function montarLinhasDatas(vaca: Vaca): LinhaData[] {
     });
   }
 
-  if (!prenha && datas.dataInseminar && !emProtocoloAtivo(vaca)) {
+  if (!prenha && datas.dataInseminar && !emProtocoloAtivo(vaca) && !aguardandoVerificarPrenhez(vaca)) {
     const podeInsem = podeInseminarAposCio(vaca);
     const podeProtocolo = precisaProtocoloIatf(vaca);
     linhas.push({
@@ -205,17 +217,13 @@ export function montarLinhasDatas(vaca: Vaca): LinhaData[] {
 
   if (prenha && estaEmLactacao(vaca) && datas.inicioSeca) {
     linhas.push({
-      id: 'secar_em',
-      label: 'Secar em',
+      id: 'secagem',
+      label: LABEL_SECAGEM,
       data: datas.inicioSeca,
       destaque: 'warn',
     });
-  } else if (!prenha && datas.fimLactacao) {
-    linhas.push({ id: 'fim_lactacao', label: 'Fim lactação', data: datas.fimLactacao });
-  }
-
-  if (!prenha && datas.inicioSeca && !inseminada) {
-    linhas.push({ id: 'inicio_seca', label: 'Início seca', data: datas.inicioSeca });
+  } else if (!prenha && dataSecagem(datas)) {
+    linhas.push({ id: 'secagem', label: LABEL_SECAGEM, data: dataSecagem(datas)! });
   }
 
   if (datas.preParto) {
@@ -225,19 +233,19 @@ export function montarLinhasDatas(vaca: Vaca): LinhaData[] {
   if (prenha && datas.partoPrevisto) {
     linhas.push({
       id: 'parto_previsto',
-      label: 'Parto previsto',
+      label: LABEL_PREVISAO_PARTO,
       data: datas.partoPrevisto,
       destaque: 'highlight',
     });
   } else if (inseminada && !prenha && datas.partoPrevistoAprox) {
     linhas.push({
       id: 'parto_previsto_aprox',
-      label: 'Parto previsto (aprox.)',
+      label: `${LABEL_PREVISAO_PARTO} (aprox.)`,
       data: datas.partoPrevistoAprox,
       destaque: 'highlight',
     });
   } else if (!inseminada && passouInseminar && datas.fimSeca) {
-    linhas.push({ id: 'fim_seca', label: 'Fim seca', data: datas.fimSeca });
+    linhas.push({ id: 'previsao_parto', label: LABEL_PREVISAO_PARTO, data: datas.fimSeca });
   }
 
   linhas.sort((a, b) => a.data.localeCompare(b.data));
@@ -272,13 +280,6 @@ export function montarResumoVaca(vaca: Vaca): VacaResumoVisual {
       data: cio ?? todayISO(),
       variante: 'action',
     };
-  } else if (precisaProtocoloIatf(vaca) && datas.dataInseminar) {
-    proximaAcao = {
-      id: 'protocolo_iatf',
-      titulo: 'Colocar em protocolo IATF',
-      data: datas.dataInseminar,
-      variante: 'warn',
-    };
   } else if (aguardandoVerificarPrenhez(vaca) && datas.dataVerificarPrenhez) {
     const dias = daysFromToday(datas.dataVerificarPrenhez);
     proximaAcao = {
@@ -286,6 +287,13 @@ export function montarResumoVaca(vaca: Vaca): VacaResumoVisual {
       titulo: dias <= 0 ? 'Verificar prenhez' : 'Verificar prenhez em',
       data: datas.dataVerificarPrenhez,
       variante: dias <= 0 ? 'action' : 'neutral',
+    };
+  } else if (precisaProtocoloIatf(vaca) && datas.dataInseminar) {
+    proximaAcao = {
+      id: 'protocolo_iatf',
+      titulo: 'Colocar em protocolo IATF',
+      data: datas.dataInseminar,
+      variante: 'warn',
     };
   } else if (podeRegistrarCio(vaca) && datas.dataInseminar) {
     proximaAcao = {
@@ -297,7 +305,7 @@ export function montarResumoVaca(vaca: Vaca): VacaResumoVisual {
   } else if (prenha && datas.partoPrevisto) {
     proximaAcao = {
       id: 'parto_previsto',
-      titulo: 'Parto previsto',
+      titulo: LABEL_PREVISAO_PARTO,
       data: datas.partoPrevisto,
       variante: 'highlight',
     };
@@ -316,12 +324,12 @@ export function montarResumoVaca(vaca: Vaca): VacaResumoVisual {
     candidatos.push({ id: 'ultimo_parto', label: 'Último parto', data: datas.ultimoParto });
   }
 
-  if (prenha && estaEmLactacao(vaca) && datas.inicioSeca && proximaAcao?.id !== 'secar_em') {
-    candidatos.push({ id: 'secar_em', label: 'Secar em', data: datas.inicioSeca });
+  if (prenha && estaEmLactacao(vaca) && datas.inicioSeca && proximaAcao?.id !== 'secagem') {
+    candidatos.push({ id: 'secagem', label: LABEL_SECAGEM, data: datas.inicioSeca });
   }
 
   if (prenha && datas.partoPrevisto && proximaAcao?.id !== 'parto_previsto') {
-    candidatos.push({ id: 'parto_previsto', label: 'Parto previsto', data: datas.partoPrevisto });
+    candidatos.push({ id: 'parto_previsto', label: LABEL_PREVISAO_PARTO, data: datas.partoPrevisto });
   } else if (
     vaca.data_ultima_inseminacao &&
     !prenha &&
@@ -330,23 +338,45 @@ export function montarResumoVaca(vaca: Vaca): VacaResumoVisual {
   ) {
     candidatos.push({
       id: 'parto_previsto_aprox',
-      label: 'Parto (aprox.)',
+      label: `${LABEL_PREVISAO_PARTO} (aprox.)`,
       data: datas.partoPrevistoAprox,
     });
   }
 
-  if (!prenha && datas.fimLactacao && proximaAcao?.id !== 'fim_lactacao') {
-    candidatos.push({ id: 'fim_lactacao', label: 'Fim lactação', data: datas.fimLactacao });
+  const secagem = dataSecagem(datas);
+  if (!prenha && secagem && proximaAcao?.id !== 'secagem') {
+    candidatos.push({ id: 'secagem', label: LABEL_SECAGEM, data: secagem });
   }
 
-  if (datas.preParto && proximaAcao?.id !== 'pre_parto') {
+  if (!prenha && datas.preParto && proximaAcao?.id !== 'pre_parto') {
     candidatos.push({ id: 'pre_parto', label: 'Pré-parto', data: datas.preParto });
+  }
+
+  if (
+    !prenha &&
+    datas.dataVerificarPrenhez &&
+    vaca.data_ultima_inseminacao &&
+    proximaAcao?.id !== 'verificar_prenhez'
+  ) {
+    candidatos.push({
+      id: 'verificar_prenhez',
+      label: 'Verificar prenhez',
+      data: datas.dataVerificarPrenhez,
+    });
+  }
+
+  if (
+    !prenha &&
+    datas.fimSeca &&
+    !vaca.data_ultima_inseminacao &&
+    proximaAcao?.id !== 'previsao_parto'
+  ) {
+    candidatos.push({ id: 'previsao_parto', label: LABEL_PREVISAO_PARTO, data: datas.fimSeca });
   }
 
   const marcos = candidatos
     .filter((m) => !proximaAcao || m.data !== proximaAcao.data || m.id !== proximaAcao.id)
-    .sort((a, b) => a.data.localeCompare(b.data))
-    .slice(0, 3);
+    .sort((a, b) => a.data.localeCompare(b.data));
 
   return { proximaAcao, marcos };
 }

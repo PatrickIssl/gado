@@ -6,13 +6,19 @@ import { VacaService } from '../../core/services/vaca.service';
 import { Bezerro } from '../../core/models/bezerro.model';
 import { Vaca } from '../../core/models/vaca.model';
 import {
+  aguardandoBrucelose,
+  bruceloseAplicada,
+  brucelosePendente,
+  dataBrucelose,
   dataSaidaBezerreiro,
   diasNoBezerreiro,
+  diasParaBrucelose,
   diasRestantesBezerreiro,
+  eBezerra,
   programaLeiteAtual,
   estaDesmamado,
 } from '../../core/utils/bezerro.utils';
-import { formatDateBR } from '../../core/utils/date.utils';
+import { addDays, formatDateBR, todayISO } from '../../core/utils/date.utils';
 
 @Component({
   selector: 'app-bezerros',
@@ -27,6 +33,16 @@ export class BezerrosComponent implements OnInit {
   loading = true;
   erro = '';
   filtro = 'todos';
+  modalCadastro = false;
+  modalBrucelose = false;
+  bezerroSelecionado: Bezerro | null = null;
+  dataBruceloseForm = todayISO();
+  formCadastro = {
+    vaca_id: '',
+    nome: '',
+    sexo: 'macho' as 'macho' | 'femea',
+    dias_vida: 0,
+  };
 
   constructor(
     private bezerroService: BezerroService,
@@ -38,7 +54,11 @@ export class BezerrosComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
       const filtro = params.get('filtro');
-      this.filtro = filtro === 'bezerreiro' || filtro === 'desmamados' ? filtro : 'todos';
+      if (filtro === 'bezerreiro' || filtro === 'desmamados' || filtro === 'brucelose_pendente') {
+        this.filtro = filtro;
+      } else {
+        this.filtro = 'todos';
+      }
     });
     this.carregar();
   }
@@ -71,6 +91,12 @@ export class BezerrosComponent implements OnInit {
   diasRestantes = diasRestantesBezerreiro;
   dataSaida = dataSaidaBezerreiro;
   estaDesmamado = estaDesmamado;
+  eBezerra = eBezerra;
+  bruceloseAplicada = bruceloseAplicada;
+  brucelosePendente = brucelosePendente;
+  aguardandoBrucelose = aguardandoBrucelose;
+  dataBrucelose = dataBrucelose;
+  diasParaBrucelose = diasParaBrucelose;
   Math = Math;
 
   get filtrados(): Bezerro[] {
@@ -79,6 +105,9 @@ export class BezerrosComponent implements OnInit {
     }
     if (this.filtro === 'desmamados') {
       return this.bezerros.filter((b) => estaDesmamado(b.data_nascimento) || b.desmamado);
+    }
+    if (this.filtro === 'brucelose_pendente') {
+      return this.bezerros.filter((b) => brucelosePendente(b));
     }
     return this.bezerros;
   }
@@ -98,6 +127,7 @@ export class BezerrosComponent implements OnInit {
     const labels: Record<string, string> = {
       bezerreiro: 'No Bezerreiro',
       desmamados: 'Desmamados',
+      brucelose_pendente: 'Brucelose pendente',
     };
     return `${this.filtrados.length} de ${this.bezerros.length} · filtro: ${labels[this.filtro]}`;
   }
@@ -118,6 +148,79 @@ export class BezerrosComponent implements OnInit {
       await this.carregar();
     } catch {
       this.erro = 'Erro ao excluir bezerro.';
+    }
+  }
+
+  abrirCadastro(): void {
+    this.formCadastro = {
+      vaca_id: this.vacas[0]?.id ?? '',
+      nome: '',
+      sexo: 'macho',
+      dias_vida: 0,
+    };
+    this.modalCadastro = true;
+    this.erro = '';
+  }
+
+  fecharCadastro(): void {
+    this.modalCadastro = false;
+  }
+
+  abrirBrucelose(b: Bezerro): void {
+    this.bezerroSelecionado = b;
+    this.dataBruceloseForm = todayISO();
+    this.modalBrucelose = true;
+    this.erro = '';
+  }
+
+  fecharBrucelose(): void {
+    this.modalBrucelose = false;
+    this.bezerroSelecionado = null;
+  }
+
+  async confirmarBrucelose(): Promise<void> {
+    if (!this.bezerroSelecionado || !this.dataBruceloseForm) return;
+    try {
+      await this.bezerroService.registrarBrucelose(
+        this.bezerroSelecionado.id,
+        this.dataBruceloseForm
+      );
+      this.fecharBrucelose();
+      await this.carregar();
+    } catch {
+      this.erro = 'Erro ao registrar vacina de brucelose.';
+    }
+  }
+
+  get dataNascimentoCalculada(): string {
+    const dias = Math.max(0, this.formCadastro.dias_vida ?? 0);
+    return addDays(todayISO(), -dias);
+  }
+
+  async salvarCadastro(): Promise<void> {
+    if (!this.formCadastro.vaca_id) {
+      this.erro = 'Selecione a vaca mãe.';
+      return;
+    }
+    if (!this.formCadastro.nome.trim()) {
+      this.erro = 'Informe o nome do bezerro.';
+      return;
+    }
+    if (this.formCadastro.dias_vida < 0) {
+      this.erro = 'Os dias de vida não podem ser negativos.';
+      return;
+    }
+    try {
+      await this.bezerroService.criar({
+        vaca_id: this.formCadastro.vaca_id,
+        nome: this.formCadastro.nome.trim(),
+        sexo: this.formCadastro.sexo,
+        data_nascimento: this.dataNascimentoCalculada,
+      });
+      this.fecharCadastro();
+      await this.carregar();
+    } catch {
+      this.erro = 'Erro ao cadastrar bezerro.';
     }
   }
 }

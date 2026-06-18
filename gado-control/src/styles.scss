@@ -455,6 +455,28 @@ h2 {
   line-height: 1.6;
 }
 
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+  }
+}
+
 .modal-actions {
   display: flex;
   gap: 0.75rem;
@@ -496,4 +518,10 @@ h2 {
   background: var(--blue-50);
   border-color: #bfdbfe;
   color: #1e40af;
+}
+
+.info-box--amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
 }

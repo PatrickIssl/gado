@@ -5,6 +5,8 @@ export interface Bezerro {
   sexo: 'macho' | 'femea';
   data_nascimento: string;
   desmamado: boolean;
+  brucelose_aplicada?: boolean;
+  data_brucelose?: string | null;
   created_at?: string;
 }
 

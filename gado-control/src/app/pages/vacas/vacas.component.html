@@ -33,6 +33,7 @@
     </div>
     <select [(ngModel)]="filtroStatus" (ngModelChange)="onFiltroStatusChange()">
       <option value="todos">Todos</option>
+      <option value="doente">Doentes</option>
       @for (s of statusOptions; track s) {
         <option [value]="s">{{ statusLabels[s] }}</option>
       }
@@ -71,6 +72,14 @@
                   }
                 </div>
                 <span class="card-meta">#{{ vaca.numero }} · {{ vaca.raca || 'sem raça' }}</span>
+                <div class="card-extra">
+                  <span class="stat-pill">{{ labelPrenhezes(vaca) }}</span>
+                  @if (vaca.doente) {
+                    <span class="stat-pill stat-pill--sick" [title]="vaca.doenca || 'Doente'">
+                      Doente{{ vaca.doenca ? ': ' + vaca.doenca : '' }}
+                    </span>
+                  }
+                </div>
               </div>
             </div>
             <div class="card-actions">
@@ -119,6 +128,50 @@
                 }
               </div>
             }
+
+            @if (linhasDatas(vaca).length > 0) {
+              <button
+                type="button"
+                class="btn-detalhes"
+                (click)="toggleDetalhes(vaca.id)"
+              >
+                @if (estaExpandida(vaca.id)) {
+                  Ocultar cronograma
+                } @else {
+                  Ver cronograma completo ({{ linhasDatas(vaca).length }})
+                }
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  width="14"
+                  height="14"
+                  [class.rotated]="estaExpandida(vaca.id)"
+                >
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+              </button>
+
+              @if (estaExpandida(vaca.id)) {
+                <div class="cronograma">
+                  @for (linha of linhasDatas(vaca); track linha.id) {
+                    <div
+                      class="cronograma-row"
+                      [class.cronograma-row--highlight]="linha.destaque === 'highlight'"
+                      [class.cronograma-row--warn]="linha.destaque === 'warn'"
+                      [class.cronograma-row--action]="linha.destaque === 'action'"
+                    >
+                      <span class="cronograma-label">{{ linha.label }}</span>
+                      <span class="cronograma-value">
+                        {{ formatDate(linha.data) }}
+                        <small>{{ textoDias(linha.data) }}</small>
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
+            }
           </div>
 
           @if (temAcoes(vaca)) {
@@ -146,10 +199,239 @@
   }
 </div>
 
-@if (modal === 'criar' || modal === 'editar') {
+@if (modal === 'criar') {
+  <div class="modal-overlay" (click)="fecharModal()">
+    <div class="modal modal--wizard" (click)="$event.stopPropagation()">
+      <div class="wizard-header">
+        <div>
+          <p class="wizard-eyebrow">Assistente de cadastro</p>
+          <h2>Nova Vaca</h2>
+        </div>
+        <span class="wizard-step-label">Passo {{ wizardStep }} de {{ wizardTotalSteps }}</span>
+      </div>
+
+      <div class="wizard-progress">
+        @for (titulo of wizardTitulos; track titulo; let i = $index) {
+          <div
+            class="wizard-progress-item"
+            [class.active]="wizardStep === i + 1"
+            [class.done]="wizardStep > i + 1"
+          >
+            <span class="wizard-progress-dot">{{ i + 1 }}</span>
+            <span class="wizard-progress-text">{{ titulo }}</span>
+          </div>
+        }
+      </div>
+
+      @if (wizardErro) {
+        <div class="alert alert-error wizard-alert">{{ wizardErro }}</div>
+      }
+
+      <div class="wizard-body">
+        @if (wizardStep === 1) {
+          <p class="wizard-desc">Comece com os dados básicos da vaca.</p>
+          <label>
+            Número
+            <input [(ngModel)]="wizard.numero" name="wNumero" placeholder="Ex: 0001" required />
+          </label>
+          <label>
+            Nome
+            <input [(ngModel)]="wizard.nome" name="wNome" placeholder="Ex: Mimosa" required />
+          </label>
+          <label>
+            Raça
+            <input [(ngModel)]="wizard.raca" name="wRaca" placeholder="Ex: Holandesa" />
+          </label>
+          <label>
+            Partos / prenhezes anteriores
+            <input
+              type="number"
+              min="0"
+              [(ngModel)]="wizard.total_prenhezes"
+              name="wTotalPrenhezes"
+            />
+            <small class="field-hint">
+              Quantas vezes já pariu antes. Ao registrar novo parto no sistema, soma +1 automaticamente.
+            </small>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="wizard.doente" name="wDoente" />
+            Vaca está doente
+          </label>
+          @if (wizard.doente) {
+            <label>
+              Qual doença?
+              <input
+                [(ngModel)]="wizard.doenca"
+                name="wDoenca"
+                placeholder="Ex: mastite, pneumonia..."
+                required
+              />
+            </label>
+          }
+        }
+
+        @if (wizardStep === 2) {
+          <p class="wizard-desc">O parto define a lactação e a contagem dos 40 dias para nova inseminação.</p>
+          <div class="wizard-choice-row">
+            <button
+              type="button"
+              class="wizard-choice"
+              [class.selected]="wizard.teveParto === true"
+              (click)="onTevePartoChange(true)"
+            >
+              <strong>Sim, já teve parto</strong>
+              <span>Informar data do último parto</span>
+            </button>
+            <button
+              type="button"
+              class="wizard-choice"
+              [class.selected]="wizard.teveParto === false"
+              (click)="onTevePartoChange(false)"
+            >
+              <strong>Não / novilha</strong>
+              <span>Sem parto registrado</span>
+            </button>
+          </div>
+          @if (wizard.teveParto) {
+            <label>
+              Data do último parto
+              <input type="date" [(ngModel)]="wizard.data_parto" name="wDataParto" required />
+            </label>
+          }
+        }
+
+        @if (wizardStep === 3) {
+          <p class="wizard-desc">Como ela está agora no rebanho?</p>
+          <div class="wizard-situacoes">
+            @for (opt of situacoesDisponiveis; track opt.id) {
+              <button
+                type="button"
+                class="wizard-situacao-card"
+                [class.selected]="wizard.situacao === opt.id"
+                (click)="selecionarSituacao(opt.id)"
+              >
+                <span class="wizard-situacao-icon">{{ opt.icon }}</span>
+                <strong>{{ opt.titulo }}</strong>
+                <span>{{ opt.desc }}</span>
+              </button>
+            }
+          </div>
+
+          @if (wizard.situacao === 'prenha_lactacao' || wizard.situacao === 'aguardando_prenhez') {
+            <label>
+              Data da inseminação
+              <input type="date" [(ngModel)]="wizard.data_inseminacao" name="wDataInsem" required />
+              @if (wizard.situacao === 'prenha_lactacao') {
+                <small class="field-hint">Prenhez já confirmada (21 dias sem repetir cio)</small>
+              } @else {
+                <small class="field-hint">O sistema vai alertar para verificar prenhez em 21 dias</small>
+              }
+            </label>
+          }
+
+          @if (wizard.situacao === 'protocolo') {
+            <label>
+              Início do protocolo IATF
+              <input
+                type="date"
+                [(ngModel)]="wizard.data_inicio_protocolo"
+                name="wInicioProtocolo"
+                required
+              />
+            </label>
+            <label>
+              Duração
+              <select [(ngModel)]="wizard.dias_protocolo" name="wDiasProtocolo">
+                <option [ngValue]="10">10 dias</option>
+                <option [ngValue]="11">11 dias</option>
+              </select>
+            </label>
+          }
+        }
+
+        @if (wizardStep === 4) {
+          <p class="wizard-desc">Revise antes de cadastrar.</p>
+          <div class="wizard-resumo">
+            <div class="wizard-resumo-row">
+              <span>Vaca</span>
+              <strong>{{ wizard.nome }} (#{{ wizard.numero }})</strong>
+            </div>
+            <div class="wizard-resumo-row">
+              <span>Raça</span>
+              <strong>{{ wizard.raca || '—' }}</strong>
+            </div>
+            <div class="wizard-resumo-row">
+              <span>Prenhezes (histórico)</span>
+              <strong>{{ wizard.total_prenhezes }}</strong>
+            </div>
+            <div class="wizard-resumo-row">
+              <span>Saúde</span>
+              <strong>
+                @if (wizard.doente) {
+                  Doente — {{ wizard.doenca }}
+                } @else {
+                  Saudável
+                }
+              </strong>
+            </div>
+            <div class="wizard-resumo-row">
+              <span>Parto</span>
+              <strong>
+                @if (wizard.teveParto && wizard.data_parto) {
+                  {{ formatDate(wizard.data_parto) }}
+                } @else {
+                  Sem parto registrado
+                }
+              </strong>
+            </div>
+            <div class="wizard-resumo-row">
+              <span>Situação</span>
+              <strong>{{ wizardResumoSituacao() }}</strong>
+            </div>
+            @if (wizard.data_inseminacao) {
+              <div class="wizard-resumo-row">
+                <span>Inseminação</span>
+                <strong>{{ formatDate(wizard.data_inseminacao) }}</strong>
+              </div>
+            }
+            @if (wizard.situacao === 'protocolo') {
+              <div class="wizard-resumo-row">
+                <span>Protocolo</span>
+                <strong>
+                  {{ formatDate(wizard.data_inicio_protocolo!) }} · {{ wizard.dias_protocolo }} dias
+                </strong>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="modal-actions wizard-actions">
+        @if (wizardStep > 1) {
+          <button type="button" class="btn btn-outline" (click)="wizardVoltar()">Voltar</button>
+        } @else {
+          <button type="button" class="btn btn-outline" (click)="fecharModal()">Cancelar</button>
+        }
+        @if (wizardStep < wizardTotalSteps) {
+          <button type="button" class="btn btn-primary" (click)="wizardAvancar()">Continuar</button>
+        } @else {
+          <button type="button" class="btn btn-primary" (click)="finalizarWizard()">
+            Cadastrar vaca
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+@if (modal === 'editar') {
   <div class="modal-overlay" (click)="fecharModal()">
     <div class="modal" (click)="$event.stopPropagation()">
-      <h2>{{ modal === 'criar' ? 'Nova Vaca' : 'Editar Vaca' }}</h2>
+      <h2>Editar Vaca</h2>
+      <p class="modal-desc">
+        Informe o último parto (se houver) e a situação atual. O sistema calcula lactação, seca e pré-parto automaticamente.
+      </p>
       <form (ngSubmit)="salvar()">
         <label>
           Número
@@ -164,13 +446,71 @@
           <input [(ngModel)]="form.raca" name="raca" />
         </label>
         <label>
-          Status
+          Último parto
+          <input type="date" [(ngModel)]="form.data_parto" name="dataParto" />
+          <small class="field-hint">Opcional — inicia lactação de 7 meses e contagem dos 40 dias para IA</small>
+        </label>
+        <label>
+          Situação atual
           <select [(ngModel)]="form.status" name="status">
             @for (s of statusOptions; track s) {
               <option [value]="s">{{ statusLabels[s] }}</option>
             }
           </select>
         </label>
+
+        @if (form.status === 'prenha') {
+          <label>
+            Data da inseminação (prenhez confirmada)
+            <input
+              type="date"
+              [(ngModel)]="form.data_inseminacao_prenhez"
+              name="dataInsemPrenhez"
+              required
+            />
+            <small class="field-hint">Pode estar lactando e prenha ao mesmo tempo</small>
+          </label>
+        }
+
+        @if (form.status === 'em_protocolo_iatf') {
+          <label>
+            Início do protocolo IATF
+            <input
+              type="date"
+              [(ngModel)]="form.data_inicio_protocolo_iatf"
+              name="dataInicioProtocolo"
+            />
+          </label>
+          <label>
+            Duração do protocolo
+            <select [(ngModel)]="form.dias_protocolo_iatf" name="diasProtocoloForm">
+              <option [ngValue]="10">10 dias</option>
+              <option [ngValue]="11">11 dias</option>
+            </select>
+          </label>
+        }
+
+        <label>
+          Partos / prenhezes anteriores
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="form.total_prenhezes"
+            name="totalPrenhezes"
+          />
+          <small class="field-hint">Incrementa +1 automaticamente ao confirmar parto</small>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="form.doente" name="doente" />
+          Vaca está doente
+        </label>
+        @if (form.doente) {
+          <label>
+            Qual doença?
+            <input [(ngModel)]="form.doenca" name="doenca" placeholder="Ex: mastite" required />
+          </label>
+        }
+
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" (click)="fecharModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar</button>

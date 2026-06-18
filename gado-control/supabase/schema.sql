@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS vacas (
   data_inseminacao_prenhez DATE,
   data_inicio_protocolo_iatf DATE,
   dias_protocolo_iatf INTEGER CHECK (dias_protocolo_iatf IN (10, 11)),
+  total_prenhezes INTEGER NOT NULL DEFAULT 0 CHECK (total_prenhezes >= 0),
+  doente BOOLEAN NOT NULL DEFAULT FALSE,
+  doenca TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -41,6 +44,8 @@ CREATE TABLE IF NOT EXISTS bezerros (
   sexo TEXT NOT NULL CHECK (sexo IN ('macho', 'femea')),
   data_nascimento DATE NOT NULL,
   desmamado BOOLEAN DEFAULT FALSE,
+  brucelose_aplicada BOOLEAN NOT NULL DEFAULT FALSE,
+  data_brucelose DATE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

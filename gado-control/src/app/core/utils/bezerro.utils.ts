@@ -1,4 +1,4 @@
-import { ProgramaLeite } from '../models/bezerro.model';
+import { Bezerro, ProgramaLeite } from '../models/bezerro.model';
 import { addDays, daysSince } from './date.utils';
 
 const DIAS_BEZERREIRO = 90;
@@ -69,6 +69,32 @@ export function programaLeiteAtual(dataNascimento: string): ProgramaLeite {
 
 export function estaDesmamado(dataNascimento: string): boolean {
   return diasNoBezerreiro(dataNascimento) > 90;
+}
+
+export function eBezerra(b: Bezerro): boolean {
+  return b.sexo === 'femea';
+}
+
+export function bruceloseAplicada(b: Bezerro): boolean {
+  return b.brucelose_aplicada ?? false;
+}
+
+export function dataBrucelose(dataNascimento: string): string {
+  return addDays(dataNascimento, DIAS_BEZERREIRO);
+}
+
+export function diasParaBrucelose(dataNascimento: string): number {
+  return DIAS_BEZERREIRO - diasNoBezerreiro(dataNascimento);
+}
+
+/** Bezerra com 90+ dias e vacina ainda não registrada */
+export function brucelosePendente(b: Bezerro): boolean {
+  return eBezerra(b) && !bruceloseAplicada(b) && diasNoBezerreiro(b.data_nascimento) >= DIAS_BEZERREIRO;
+}
+
+/** Bezerra fêmea aguardando completar 90 dias */
+export function aguardandoBrucelose(b: Bezerro): boolean {
+  return eBezerra(b) && !bruceloseAplicada(b) && diasNoBezerreiro(b.data_nascimento) < DIAS_BEZERREIRO;
 }
 
 export { DIAS_BEZERREIRO };

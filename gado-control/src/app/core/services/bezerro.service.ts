@@ -25,6 +25,7 @@ export class BezerroService {
         sexo: form.sexo,
         data_nascimento: form.data_nascimento,
         desmamado: false,
+        brucelose_aplicada: false,
       })
       .select()
       .single();
@@ -37,6 +38,21 @@ export class BezerroService {
     const { data, error } = await this.supabase.db
       .from('bezerros')
       .update({ desmamado: true })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Bezerro;
+  }
+
+  async registrarBrucelose(id: string, dataBrucelose: string): Promise<Bezerro> {
+    const { data, error } = await this.supabase.db
+      .from('bezerros')
+      .update({
+        brucelose_aplicada: true,
+        data_brucelose: dataBrucelose,
+      })
       .eq('id', id)
       .select()
       .single();

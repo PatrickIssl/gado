@@ -5,6 +5,12 @@
       <h1>Bezerros</h1>
       <p class="subtitle">{{ subtituloListagem }}</p>
     </div>
+    <button class="btn btn-primary" (click)="abrirCadastro()" [disabled]="vacas.length === 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Cadastrar Bezerro
+    </button>
   </header>
 
   @if (erro) {
@@ -19,11 +25,20 @@
     </div>
   </div>
 
+  <div class="info-box info-box--amber">
+    <span class="info-icon">💉</span>
+    <div>
+      <strong>Brucelose (bezerras):</strong>
+      toda fêmea deve receber a vacina após completar 90 dias de vida.
+    </div>
+  </div>
+
   <div class="toolbar">
     <select [(ngModel)]="filtro" (ngModelChange)="onFiltroChange()">
       <option value="todos">Todos os bezerros</option>
       <option value="bezerreiro">No Bezerreiro</option>
       <option value="desmamados">Desmamados</option>
+      <option value="brucelose_pendente">Brucelose pendente</option>
     </select>
   </div>
 
@@ -40,7 +55,10 @@
         </svg>
       </div>
       <strong>Nenhum bezerro encontrado</strong>
-      <p>Bezerros são cadastrados automaticamente ao registrar um parto.</p>
+      <p>Cadastre manualmente ou registre um parto na tela de vacas.</p>
+      @if (vacas.length > 0) {
+        <button class="btn btn-primary" (click)="abrirCadastro()">+ Cadastrar Bezerro</button>
+      }
     </div>
   } @else {
     <div class="card-list">
@@ -57,6 +75,9 @@
               </div>
             </div>
             <div class="card-actions">
+              @if (brucelosePendente(b)) {
+                <button class="btn btn-sm btn-primary" (click)="abrirBrucelose(b)">Registrar Brucelose</button>
+              }
               @if (!estaDesmamado(b.data_nascimento) && !b.desmamado) {
                 <button class="btn btn-sm btn-outline" (click)="marcarDesmamado(b)">Desmamar</button>
               }
@@ -105,8 +126,116 @@
             </div>
             <div class="leite-desc">{{ programaLeite(b.data_nascimento).descricao }}</div>
           </div>
+
+          @if (eBezerra(b)) {
+            <div
+              class="brucelose-box"
+              [class.brucelose-box--ok]="bruceloseAplicada(b)"
+              [class.brucelose-box--pendente]="brucelosePendente(b)"
+              [class.brucelose-box--aguardando]="aguardandoBrucelose(b)"
+            >
+              @if (bruceloseAplicada(b)) {
+                <div class="brucelose-header">
+                  <span class="brucelose-label">Brucelose</span>
+                  <span class="brucelose-badge brucelose-badge--ok">Aplicada</span>
+                </div>
+                <span class="brucelose-desc">Vacinada em {{ formatDate(b.data_brucelose!) }}</span>
+              } @else if (brucelosePendente(b)) {
+                <div class="brucelose-header">
+                  <span class="brucelose-label">Brucelose</span>
+                  <span class="brucelose-badge brucelose-badge--pendente">Pendente</span>
+                </div>
+                <span class="brucelose-desc">
+                  Bezerra com {{ diasNoBezerreiro(b.data_nascimento) }} dias — vacina obrigatória
+                </span>
+              } @else {
+                <div class="brucelose-header">
+                  <span class="brucelose-label">Brucelose</span>
+                  <span class="brucelose-badge brucelose-badge--aguardando">Em {{ diasParaBrucelose(b.data_nascimento) }}d</span>
+                </div>
+                <span class="brucelose-desc">
+                  Prevista a partir de {{ formatDate(dataBrucelose(b.data_nascimento)) }}
+                </span>
+              }
+            </div>
+          }
         </article>
       }
     </div>
   }
 </div>
+
+@if (modalCadastro) {
+  <div class="modal-overlay" (click)="fecharCadastro()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Cadastrar Bezerro</h2>
+      <p class="modal-desc">
+        Informe quantos dias de vida o bezerro tem — a data de nascimento é calculada automaticamente.
+      </p>
+      <form (ngSubmit)="salvarCadastro()">
+        <label>
+          Vaca mãe
+          <select [(ngModel)]="formCadastro.vaca_id" name="vacaMae" required>
+            <option value="" disabled>Selecione...</option>
+            @for (v of vacas; track v.id) {
+              <option [value]="v.id">#{{ v.numero }} — {{ v.nome }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Nome do bezerro
+          <input [(ngModel)]="formCadastro.nome" name="nomeBezerro" required placeholder="Ex: Trovão" />
+        </label>
+        <label>
+          Sexo
+          <select [(ngModel)]="formCadastro.sexo" name="sexoBezerro">
+            <option value="macho">Macho</option>
+            <option value="femea">Fêmea</option>
+          </select>
+        </label>
+        <label>
+          Dias de vida
+          <input
+            type="number"
+            min="0"
+            max="365"
+            [(ngModel)]="formCadastro.dias_vida"
+            name="diasVida"
+            required
+          />
+          <small class="field-hint">0 = nasceu hoje · 15 = nasceu há 15 dias</small>
+        </label>
+        <div class="nascimento-preview">
+          <span>Data de nascimento</span>
+          <strong>{{ formatDate(dataNascimentoCalculada) }}</strong>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" (click)="fecharCadastro()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (modalBrucelose && bezerroSelecionado) {
+  <div class="modal-overlay" (click)="fecharBrucelose()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Registrar Brucelose</h2>
+      <p class="modal-desc">
+        Bezerra: <strong>{{ bezerroSelecionado.nome }}</strong> —
+        {{ diasNoBezerreiro(bezerroSelecionado.data_nascimento) }} dias de vida
+      </p>
+      <form (ngSubmit)="confirmarBrucelose()">
+        <label>
+          Data da vacinação
+          <input type="date" [(ngModel)]="dataBruceloseForm" name="dataBrucelose" required />
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" (click)="fecharBrucelose()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

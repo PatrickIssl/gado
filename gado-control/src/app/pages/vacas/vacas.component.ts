@@ -16,6 +16,7 @@ import {
   ehPrenha,
   emProtocoloAtivo,
   estaEmLactacao,
+  montarLinhasDatas,
   montarResumoVaca,
   podeInseminarAposCio,
   podeRegistrarCio,
@@ -28,6 +29,30 @@ import { formatDateBR, todayISO } from '../../core/utils/date.utils';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 
 type ModalTipo = 'criar' | 'editar' | 'parto' | 'inseminacao' | 'protocolo' | null;
+
+type SituacaoWizard =
+  | 'lactacao'
+  | 'prenha_lactacao'
+  | 'aguardando_prenhez'
+  | 'protocolo'
+  | 'vazia'
+  | 'seca'
+  | 'pre_parto';
+
+interface WizardCadastro {
+  numero: string;
+  nome: string;
+  raca: string;
+  total_prenhezes: number;
+  doente: boolean;
+  doenca: string;
+  teveParto: boolean | null;
+  data_parto: string | null;
+  situacao: SituacaoWizard | null;
+  data_inseminacao: string | null;
+  data_inicio_protocolo: string | null;
+  dias_protocolo: 10 | 11;
+}
 
 @Component({
   selector: 'app-vacas',
@@ -43,14 +68,33 @@ export class VacasComponent implements OnInit {
   erro = '';
   busca = '';
   filtroStatus = 'todos';
+  expandedIds = new Set<string>();
 
   modal: ModalTipo = null;
   vacaSelecionada: Vaca | null = null;
 
-  form: VacaFormData = { numero: '', nome: '', raca: '', status: 'vazia' };
+  form: VacaFormData = {
+    numero: '',
+    nome: '',
+    raca: '',
+    status: 'vazia',
+    data_parto: null,
+    data_inseminacao_prenhez: null,
+    data_ultima_inseminacao: null,
+    data_inicio_protocolo_iatf: null,
+    dias_protocolo_iatf: null,
+    total_prenhezes: 0,
+    doente: false,
+    doenca: null,
+  };
   formBezerro = { nome: '', sexo: 'macho' as 'macho' | 'femea' };
   formInseminacao = { data_inseminacao: todayISO(), observacoes: '' };
   diasProtocolo: 10 | 11 = 11;
+
+  wizardStep = 1;
+  readonly wizardTotalSteps = 4;
+  wizard: WizardCadastro = this.wizardVazio();
+  wizardErro = '';
 
   readonly statusOptions = STATUS_OPTIONS;
   readonly statusLabels = STATUS_LABELS;
@@ -75,6 +119,7 @@ export class VacasComponent implements OnInit {
   private parseFiltroUrl(filtro: string | null): string {
     if (!filtro || filtro === 'todos') return 'todos';
     if (filtro === 'lactacao') return 'lactacao';
+    if (filtro === 'doente') return 'doente';
     if (STATUS_OPTIONS.includes(filtro as StatusVaca)) return filtro;
     return 'todos';
   }
@@ -109,6 +154,8 @@ export class VacasComponent implements OnInit {
         lista = lista.filter((v) => v.status === 'prenha');
       } else if (this.filtroStatus === 'em_protocolo_iatf') {
         lista = lista.filter((v) => emProtocoloAtivo(v));
+      } else if (this.filtroStatus === 'doente') {
+        lista = lista.filter((v) => v.doente);
       } else {
         lista = lista.filter((v) => v.status === this.filtroStatus);
       }
@@ -136,14 +183,271 @@ export class VacasComponent implements OnInit {
     const label =
       this.filtroStatus === 'lactacao'
         ? 'Em Lactação'
-        : this.statusLabels[this.filtroStatus as StatusVaca] ?? this.filtroStatus;
+        : this.filtroStatus === 'doente'
+          ? 'Doentes'
+          : this.statusLabels[this.filtroStatus as StatusVaca] ?? this.filtroStatus;
     return `${this.filtradas.length} de ${this.vacas.length} · filtro: ${label}`;
   }
 
   abrirCriar(): void {
-    this.form = { numero: '', nome: '', raca: '', status: 'vazia' };
+    this.wizard = this.wizardVazio();
+    this.wizardStep = 1;
+    this.wizardErro = '';
     this.vacaSelecionada = null;
     this.modal = 'criar';
+  }
+
+  private wizardVazio(): WizardCadastro {
+    return {
+      numero: '',
+      nome: '',
+      raca: '',
+      total_prenhezes: 0,
+      doente: false,
+      doenca: '',
+      teveParto: null,
+      data_parto: null,
+      situacao: null,
+      data_inseminacao: null,
+      data_inicio_protocolo: null,
+      dias_protocolo: 11,
+    };
+  }
+
+  get wizardTitulos(): string[] {
+    return ['Identificação', 'Parto', 'Situação', 'Confirmar'];
+  }
+
+  get situacoesDisponiveis(): Array<{ id: SituacaoWizard; titulo: string; desc: string; icon: string }> {
+    if (this.wizard.teveParto === false) {
+      return [
+        {
+          id: 'vazia',
+          titulo: 'Vazia / novilha',
+          desc: 'Sem parto registrado no sistema',
+          icon: '○',
+        },
+      ];
+    }
+    return [
+      {
+        id: 'lactacao',
+        titulo: 'Só em lactação',
+        desc: 'Deu cria e está dando leite — ainda não prenha',
+        icon: '🥛',
+      },
+      {
+        id: 'prenha_lactacao',
+        titulo: 'Lactando e prenha',
+        desc: 'Melhor cenário: leite + gestação confirmada',
+        icon: '🥛🤰',
+      },
+      {
+        id: 'aguardando_prenhez',
+        titulo: 'Inseminada — verificar prenhez',
+        desc: 'IA feita, aguardando os 21 dias para confirmar',
+        icon: '⏳',
+      },
+      {
+        id: 'protocolo',
+        titulo: 'Em protocolo IATF',
+        desc: 'Passou 40d sem cio natural — protocolo ativo',
+        icon: '📋',
+      },
+      {
+        id: 'seca',
+        titulo: 'Período seco',
+        desc: 'Parou de lactar, ganhando peso',
+        icon: '🌾',
+      },
+      {
+        id: 'pre_parto',
+        titulo: 'Pré-parto',
+        desc: 'Últimos 30 dias no curral fechado',
+        icon: '🏠',
+      },
+    ];
+  }
+
+  wizardAvancar(): void {
+    this.wizardErro = '';
+    if (!this.validarWizardStep(this.wizardStep)) return;
+
+    if (this.wizardStep === 2 && this.wizard.teveParto === false) {
+      this.wizard.situacao = 'vazia';
+    }
+
+    if (this.wizardStep < this.wizardTotalSteps) {
+      this.wizardStep++;
+      if (this.wizardStep === 3 && this.wizard.teveParto === false) {
+        this.wizard.situacao = 'vazia';
+      }
+      if (this.wizardStep === 3 && this.wizard.teveParto && !this.wizard.situacao) {
+        this.wizard.situacao = 'lactacao';
+      }
+      if (this.wizardStep === 3 && this.wizard.situacao === 'protocolo' && !this.wizard.data_inicio_protocolo) {
+        this.wizard.data_inicio_protocolo = todayISO();
+      }
+    }
+  }
+
+  wizardVoltar(): void {
+    this.wizardErro = '';
+    if (this.wizardStep > 1) this.wizardStep--;
+  }
+
+  selecionarSituacao(id: SituacaoWizard): void {
+    this.wizard.situacao = id;
+    this.wizardErro = '';
+  }
+
+  validarWizardStep(step: number): boolean {
+    if (step === 1) {
+      if (!this.wizard.numero.trim() || !this.wizard.nome.trim()) {
+        this.wizardErro = 'Informe número e nome da vaca.';
+        return false;
+      }
+      if (this.wizard.doente && !this.wizard.doenca.trim()) {
+        this.wizardErro = 'Informe a doença ou desmarque que a vaca está doente.';
+        return false;
+      }
+      if (this.wizard.total_prenhezes < 0) {
+        this.wizardErro = 'O total de prenhezes não pode ser negativo.';
+        return false;
+      }
+      return true;
+    }
+    if (step === 2) {
+      if (this.wizard.teveParto === null) {
+        this.wizardErro = 'Selecione se a vaca já teve parto.';
+        return false;
+      }
+      if (this.wizard.teveParto && !this.wizard.data_parto) {
+        this.wizardErro = 'Informe a data do último parto.';
+        return false;
+      }
+      return true;
+    }
+    if (step === 3) {
+      if (!this.wizard.situacao) {
+        this.wizardErro = 'Selecione a situação atual da vaca.';
+        return false;
+      }
+      if (
+        (this.wizard.situacao === 'prenha_lactacao' ||
+          this.wizard.situacao === 'aguardando_prenhez') &&
+        !this.wizard.data_inseminacao
+      ) {
+        this.wizardErro = 'Informe a data da inseminação.';
+        return false;
+      }
+      if (this.wizard.situacao === 'protocolo' && !this.wizard.data_inicio_protocolo) {
+        this.wizardErro = 'Informe o início do protocolo.';
+        return false;
+      }
+      return true;
+    }
+    return true;
+  }
+
+  wizardResumoSituacao(): string {
+    const map: Record<SituacaoWizard, string> = {
+      lactacao: 'Em lactação',
+      prenha_lactacao: 'Lactando e prenha',
+      aguardando_prenhez: 'Inseminada — aguardando verificar prenhez',
+      protocolo: 'Em protocolo IATF',
+      vazia: 'Vazia / novilha',
+      seca: 'Período seco',
+      pre_parto: 'Pré-parto',
+    };
+    return this.wizard.situacao ? map[this.wizard.situacao] : '—';
+  }
+
+  private wizardParaForm(): VacaFormData {
+    const w = this.wizard;
+    const form: VacaFormData = {
+      numero: w.numero.trim(),
+      nome: w.nome.trim(),
+      raca: w.raca.trim(),
+      status: 'vazia',
+      data_parto: w.teveParto ? w.data_parto : null,
+      data_inseminacao_prenhez: null,
+      data_ultima_inseminacao: null,
+      data_inicio_protocolo_iatf: null,
+      dias_protocolo_iatf: null,
+      total_prenhezes: Math.max(0, w.total_prenhezes),
+      doente: w.doente,
+      doenca: w.doente && w.doenca.trim() ? w.doenca.trim() : null,
+    };
+
+    switch (w.situacao) {
+      case 'lactacao':
+        form.status = 'lactacao';
+        break;
+      case 'prenha_lactacao':
+        form.status = 'prenha';
+        form.data_inseminacao_prenhez = w.data_inseminacao;
+        break;
+      case 'aguardando_prenhez':
+        form.status = w.teveParto ? 'lactacao' : 'vazia';
+        form.data_ultima_inseminacao = w.data_inseminacao;
+        break;
+      case 'protocolo':
+        form.status = 'em_protocolo_iatf';
+        form.data_inicio_protocolo_iatf = w.data_inicio_protocolo ?? todayISO();
+        form.dias_protocolo_iatf = w.dias_protocolo;
+        break;
+      case 'seca':
+        form.status = 'seca';
+        break;
+      case 'pre_parto':
+        form.status = 'pre_parto';
+        break;
+      default:
+        form.status = 'vazia';
+    }
+
+    return form;
+  }
+
+  async finalizarWizard(): Promise<void> {
+    this.wizardErro = '';
+    if (!this.validarWizardStep(3)) return;
+
+    try {
+      const form = this.wizardParaForm();
+      const vaca = await this.vacaService.criar(form);
+
+      if (
+        this.wizard.situacao === 'aguardando_prenhez' &&
+        this.wizard.data_inseminacao
+      ) {
+        await this.inseminacaoService.registrar(
+          {
+            vaca_id: vaca.id,
+            data_inseminacao: this.wizard.data_inseminacao,
+            observacoes: 'Cadastro inicial — aguardando verificação',
+          },
+          { ...vaca, ...form } as Vaca
+        );
+      }
+
+      this.fecharModal();
+      await this.carregar();
+    } catch {
+      this.wizardErro = 'Erro ao cadastrar vaca.';
+    }
+  }
+
+  onTevePartoChange(teve: boolean): void {
+    this.wizard.teveParto = teve;
+    if (!teve) {
+      this.wizard.data_parto = null;
+      this.wizard.situacao = 'vazia';
+    } else {
+      this.wizard.situacao = 'lactacao';
+    }
+    this.wizardErro = '';
   }
 
   abrirEditar(vaca: Vaca): void {
@@ -153,6 +457,14 @@ export class VacasComponent implements OnInit {
       nome: vaca.nome,
       raca: vaca.raca,
       status: vaca.status,
+      data_parto: vaca.data_parto,
+      data_inseminacao_prenhez: vaca.data_inseminacao_prenhez,
+      data_ultima_inseminacao: vaca.data_ultima_inseminacao,
+      data_inicio_protocolo_iatf: vaca.data_inicio_protocolo_iatf,
+      dias_protocolo_iatf: (vaca.dias_protocolo_iatf as 10 | 11 | null) ?? null,
+      total_prenhezes: vaca.total_prenhezes ?? 0,
+      doente: vaca.doente ?? false,
+      doenca: vaca.doenca,
     };
     this.modal = 'editar';
   }
@@ -182,14 +494,21 @@ export class VacasComponent implements OnInit {
   fecharModal(): void {
     this.modal = null;
     this.vacaSelecionada = null;
+    this.wizardErro = '';
   }
 
   async salvar(): Promise<void> {
     if (!this.form.numero || !this.form.nome) return;
+    if (this.form.status === 'prenha' && !this.form.data_inseminacao_prenhez) {
+      this.erro = 'Informe a data da inseminação para vacas prenhas.';
+      return;
+    }
+    if (this.form.doente && !this.form.doenca?.trim()) {
+      this.erro = 'Informe a doença ou desmarque que a vaca está doente.';
+      return;
+    }
     try {
-      if (this.modal === 'criar') {
-        await this.vacaService.criar(this.form);
-      } else if (this.modal === 'editar' && this.vacaSelecionada) {
+      if (this.modal === 'editar' && this.vacaSelecionada) {
         await this.vacaService.atualizar(this.vacaSelecionada.id, this.form);
       }
       this.fecharModal();
@@ -281,6 +600,22 @@ export class VacasComponent implements OnInit {
     return montarResumoVaca(vaca);
   }
 
+  linhasDatas(vaca: Vaca) {
+    return montarLinhasDatas(vaca);
+  }
+
+  toggleDetalhes(vacaId: string): void {
+    if (this.expandedIds.has(vacaId)) {
+      this.expandedIds.delete(vacaId);
+    } else {
+      this.expandedIds.add(vacaId);
+    }
+  }
+
+  estaExpandida(vacaId: string): boolean {
+    return this.expandedIds.has(vacaId);
+  }
+
   textoDias = textoDiasRelativo;
 
   temAcoes(vaca: Vaca): boolean {
@@ -313,5 +648,10 @@ export class VacasComponent implements OnInit {
 
   podeParir(vaca: Vaca): boolean {
     return vaca.status === 'prenha';
+  }
+
+  labelPrenhezes(vaca: Vaca): string {
+    const n = vaca.total_prenhezes ?? 0;
+    return n === 1 ? '1 prenhez' : `${n} prenhezes`;
   }
 }

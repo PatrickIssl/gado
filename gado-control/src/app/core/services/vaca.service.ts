@@ -54,14 +54,10 @@ export class VacaService {
   }
 
   async criar(form: VacaFormData): Promise<Vaca> {
+    const payload = this.montarPayload(form);
     const { data, error } = await this.supabase.db
       .from('vacas')
-      .insert({
-        numero: form.numero,
-        nome: form.nome,
-        raca: form.raca,
-        status: form.status,
-      })
+      .insert(payload)
       .select()
       .single();
 
@@ -70,9 +66,10 @@ export class VacaService {
   }
 
   async atualizar(id: string, form: Partial<VacaFormData>): Promise<Vaca> {
+    const payload = this.montarPayload(form as VacaFormData);
     const { data, error } = await this.supabase.db
       .from('vacas')
-      .update(form)
+      .update(payload)
       .eq('id', id)
       .select()
       .single();
@@ -81,12 +78,50 @@ export class VacaService {
     return data as Vaca;
   }
 
+  private montarPayload(form: VacaFormData): Record<string, unknown> {
+    const doente = form.doente ?? false;
+    const payload: Record<string, unknown> = {
+      numero: form.numero,
+      nome: form.nome,
+      raca: form.raca ?? '',
+      status: form.status,
+      data_parto: form.data_parto || null,
+      data_inseminacao_prenhez: null,
+      data_ultima_inseminacao: form.data_ultima_inseminacao || null,
+      data_inicio_protocolo_iatf: null,
+      dias_protocolo_iatf: null,
+      total_prenhezes: Math.max(0, form.total_prenhezes ?? 0),
+      doente,
+      doenca: doente && form.doenca?.trim() ? form.doenca.trim() : null,
+    };
+
+    if (form.status === 'prenha' && form.data_inseminacao_prenhez) {
+      payload['data_inseminacao_prenhez'] = form.data_inseminacao_prenhez;
+      payload['data_ultima_inseminacao'] = form.data_inseminacao_prenhez;
+    }
+
+    if (form.status === 'em_protocolo_iatf') {
+      payload['data_inicio_protocolo_iatf'] =
+        form.data_inicio_protocolo_iatf || todayISO();
+      payload['dias_protocolo_iatf'] = form.dias_protocolo_iatf ?? 11;
+    }
+
+    if (form.data_parto && form.status === 'vazia') {
+      payload['status'] = 'lactacao';
+    }
+
+    return payload;
+  }
+
   async excluir(id: string): Promise<void> {
     const { error } = await this.supabase.db.from('vacas').delete().eq('id', id);
     if (error) throw error;
   }
 
   async registrarParto(vacaId: string): Promise<Vaca> {
+    const atual = await this.buscarPorId(vacaId);
+    const totalPrenhezes = (atual?.total_prenhezes ?? 0) + 1;
+
     const { data, error } = await this.supabase.db
       .from('vacas')
       .update({
@@ -96,6 +131,7 @@ export class VacaService {
         data_ultima_inseminacao: null,
         data_inicio_protocolo_iatf: null,
         dias_protocolo_iatf: null,
+        total_prenhezes: totalPrenhezes,
       })
       .eq('id', vacaId)
       .select()

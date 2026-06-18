@@ -33,6 +33,8 @@
               @case ('calf') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M6 14c-1 2-1 4 0 5.5M18 14c1 2 1 4 0 5.5"/><path d="M8 10c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5"/></svg> }
               @case ('check') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> }
               @case ('protocol') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg> }
+              @case ('sick') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 8v8M8 12h8"/><circle cx="12" cy="12" r="10"/></svg> }
+              @case ('vaccine') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m18 2 4 4-12 12-4 1 1-4 11-13z"/><path d="M15 5l4 4"/></svg> }
             }
           </div>
           <div class="stat-body">
@@ -44,6 +46,34 @@
     </div>
 
     <div class="dashboard-grid">
+      @if (bezerrasBrucelosePendente.length > 0) {
+        <section class="panel panel--alert panel--brucelose">
+          <div class="panel-header">
+            <div class="panel-icon panel-icon--rose">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="m18 2 4 4-12 12-4 1 1-4 11-13z"/><path d="M15 5l4 4"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Brucelose pendente</h2>
+              <p class="panel-desc">Bezerras com 90+ dias sem vacina registrada</p>
+            </div>
+          </div>
+          <div class="alert-list">
+            @for (b of bezerrasBrucelosePendente; track b.id) {
+              <div class="alert-item alert-item--rose">
+                <span class="alert-dot alert-dot--rose"></span>
+                <div>
+                  <strong>{{ b.nome }}</strong>
+                  <span>{{ diasNoBezerreiro(b.data_nascimento) }} dias · nasc. {{ formatDate(b.data_nascimento) }}</span>
+                </div>
+                <a class="alert-link" routerLink="/bezerros" [queryParams]="{ filtro: 'brucelose_pendente' }">Vacinar →</a>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
       @if (inseminacoesPendentes.length > 0) {
         <section class="panel panel--alert">
           <div class="panel-header">

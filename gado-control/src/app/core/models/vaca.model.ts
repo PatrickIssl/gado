@@ -17,6 +17,9 @@ export interface Vaca {
   data_inseminacao_prenhez: string | null;
   data_inicio_protocolo_iatf: string | null;
   dias_protocolo_iatf: number | null;
+  total_prenhezes: number;
+  doente: boolean;
+  doenca: string | null;
   /** Preenchido via tabela cios (não é coluna persistida em vacas). */
   ultimo_cio?: string | null;
   created_at?: string;
@@ -27,6 +30,14 @@ export interface VacaFormData {
   nome: string;
   raca: string;
   status: StatusVaca;
+  data_parto?: string | null;
+  data_inseminacao_prenhez?: string | null;
+  data_ultima_inseminacao?: string | null;
+  data_inicio_protocolo_iatf?: string | null;
+  dias_protocolo_iatf?: 10 | 11 | null;
+  total_prenhezes?: number;
+  doente?: boolean;
+  doenca?: string | null;
 }
 
 export interface DatasCiclo {

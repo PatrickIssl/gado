@@ -8,7 +8,7 @@ import { Bezerro } from '../../core/models/bezerro.model';
 import { Inseminacao } from '../../core/models/inseminacao.model';
 import { addDays, formatDateBR, todayISO } from '../../core/utils/date.utils';
 import { DIAS_VERIFICAR_PRENHEZ, emProtocoloAtivo, estaEmLactacao } from '../../core/utils/ciclo-vaca.utils';
-import { estaDesmamado } from '../../core/utils/bezerro.utils';
+import { estaDesmamado, brucelosePendente, diasNoBezerreiro } from '../../core/utils/bezerro.utils';
 
 interface StatCard {
   label: string;
@@ -109,6 +109,22 @@ export class DashboardComponent implements OnInit {
         route: '/vacas',
         queryParams: { filtro: 'em_protocolo_iatf' },
       },
+      {
+        label: 'Vacas Doentes',
+        value: this.vacasDoentes.length,
+        accent: 'red',
+        icon: 'sick',
+        route: '/vacas',
+        queryParams: { filtro: 'doente' },
+      },
+      {
+        label: 'Brucelose Pendente',
+        value: this.bezerrasBrucelosePendente.length,
+        accent: 'orange',
+        icon: 'vaccine',
+        route: '/bezerros',
+        queryParams: { filtro: 'brucelose_pendente' },
+      },
     ];
   }
 
@@ -133,10 +149,19 @@ export class DashboardComponent implements OnInit {
     return this.vacas.filter((v) => emProtocoloAtivo(v));
   }
 
+  get vacasDoentes(): Vaca[] {
+    return this.vacas.filter((v) => v.doente);
+  }
+
+  get bezerrasBrucelosePendente(): Bezerro[] {
+    return this.bezerros.filter((b) => brucelosePendente(b));
+  }
+
   nomeVaca(vacaId: string): string {
     const vaca = this.vacas.find((v) => v.id === vacaId);
     return vaca ? vaca.nome : 'Vaca';
   }
 
   formatDate = formatDateBR;
+  diasNoBezerreiro = diasNoBezerreiro;
 }
