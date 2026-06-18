@@ -34,6 +34,13 @@ jobs:
         working-directory: gado-control
         run: npm ci
 
+      - name: Configurar Supabase
+        working-directory: gado-control
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node scripts/write-env-prod.cjs
+
       - name: Build
         working-directory: gado-control
         run: npm run build:ghpages
@@ -44,21 +51,6 @@ jobs:
           cd dist/gado-control/browser
           cp index.html 404.html
           touch .nojekyll
-
-      - name: Inject Supabase env
-        working-directory: gado-control
-        run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
-            echo "::warning::SUPABASE_URL ou SUPABASE_KEY não configurados nos Secrets do GitHub."
-            echo "O site abre, mas login/dados não funcionam até você adicionar as secrets."
-            exit 0
-          fi
-          find dist/gado-control/browser -name '*.js' -exec sed -i \
-            "s|SUA_URL_SUPABASE|$SUPABASE_URL|g;s|SUA_CHAVE_ANON_SUPABASE|$SUPABASE_KEY|g" {} +
-          echo "Supabase configurado no build."
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

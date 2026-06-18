@@ -61,10 +61,16 @@ Acesse `http://localhost:4200`
 3. **Habilite o GitHub Pages** (obrigatório — senão o workflow falha):
    - **Settings → Pages → Build and deployment**
    - **Source:** selecione **GitHub Actions** (não "Deploy from a branch")
-4. Em **Settings → Secrets and variables → Actions**, adicione:
-   - `SUPABASE_URL` — URL do Supabase
-   - `SUPABASE_KEY` — chave anon do Supabase
-5. Faça push na `main` ou rode o workflow manualmente em **Actions → Deploy GitHub Pages → Run workflow**
+4. Em **Settings → Secrets and variables → Actions**, crie **exatamente** estes nomes:
+
+| Nome da secret | Onde pegar no Supabase (Settings → API) | Exemplo |
+|----------------|----------------------------------------|---------|
+| `SUPABASE_URL` | **Project URL** | `https://abcdefgh.supabase.co` |
+| `SUPABASE_KEY` | **anon public** ou **Publishable key** | `eyJhbG...` ou `sb_publishable_...` |
+
+⚠️ A URL **precisa** começar com `https://`. Não use a chave `service_role`.
+
+5. Faça push na `main` ou rode **Actions → Deploy GitHub Pages → Run workflow**
 
 URL do site: `https://<seu-usuario>.github.io/gado/`
 
