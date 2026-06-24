@@ -4,7 +4,7 @@
 
 .vaca-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 1rem;
 }
 
@@ -578,6 +578,45 @@
   .wizard-choice-row,
   .wizard-situacoes {
     grid-template-columns: 1fr;
+  }
+
+  .wizard-header {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .wizard-step-label {
+    padding-top: 0;
+  }
+
+  .modal--wizard {
+    max-width: none;
+  }
+
+  .card-top {
+    flex-wrap: wrap;
+  }
+
+  .card-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .card-footer .btn {
+    flex: 1;
+    min-width: calc(50% - 0.25rem);
+    justify-content: center;
+  }
+
+  .cronograma-row {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .cronograma-value {
+    white-space: normal;
+    text-align: left;
+    width: 100%;
   }
 }
 

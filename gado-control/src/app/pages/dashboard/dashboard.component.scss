@@ -290,4 +290,24 @@
   .stats-grid {
     grid-template-columns: 1fr;
   }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+  }
+
+  .alert-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .alert-link {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 0.25rem;
+    white-space: normal;
+  }
 }

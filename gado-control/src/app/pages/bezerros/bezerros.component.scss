@@ -254,6 +254,25 @@
 
 @media (max-width: 600px) {
   .card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bezerro-card {
+    padding: 1rem;
+  }
+
+  .card-top {
+    flex-wrap: wrap;
+  }
+
+  .card-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 400px) {
+  .card-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -10,7 +10,8 @@
 .table-wrap {
   background: var(--surface);
   border-radius: var(--radius-xl);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--shadow-card);
 }
 
@@ -94,4 +95,20 @@ table {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  table {
+    min-width: 640px;
+    font-size: 0.8rem;
+
+    th, td {
+      padding: 0.75rem 0.85rem;
+    }
+  }
+
+  .info-box {
+    flex-direction: column;
+    font-size: 0.8rem;
+  }
 }

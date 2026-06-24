@@ -12,10 +12,10 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class MainLayoutComponent {
   readonly navItems = [
-    { path: '/painel', label: 'Painel', icon: 'grid' as const },
-    { path: '/vacas', label: 'Vacas', icon: 'cow' as const },
-    { path: '/inseminacoes', label: 'Inseminações', icon: 'syringe' as const },
-    { path: '/bezerros', label: 'Bezerros', icon: 'calf' as const },
+    { path: '/painel', label: 'Painel', mobileLabel: 'Painel', icon: 'grid' as const },
+    { path: '/vacas', label: 'Vacas', mobileLabel: 'Vacas', icon: 'cow' as const },
+    { path: '/inseminacoes', label: 'Inseminações', mobileLabel: 'Insem.', icon: 'syringe' as const },
+    { path: '/bezerros', label: 'Bezerros', mobileLabel: 'Bezerros', icon: 'calf' as const },
   ];
 
   constructor(
