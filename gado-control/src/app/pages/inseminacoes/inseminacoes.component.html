@@ -59,6 +59,8 @@
           <tr>
             <th>Vaca</th>
             <th>Data Inseminação</th>
+            <th>Boi</th>
+            <th>Sêmen</th>
             <th>Verificar em (21d)</th>
             <th>Status</th>
             <th>Ações</th>
@@ -69,6 +71,8 @@
             <tr [class.row-action]="classeStatus(i) === 'action'">
               <td><strong class="cell-name">{{ nomeVaca(i.vaca_id) }}</strong></td>
               <td>{{ formatDate(i.data_inseminacao) }}</td>
+              <td>{{ i.touro || '—' }}</td>
+              <td>{{ i.tipo_semen ? tipoSemenLabels[i.tipo_semen] : '—' }}</td>
               <td>{{ formatDate(dataVerificacao(i.data_inseminacao)) }}</td>
               <td>
                 <span class="status-tag" [class]="classeStatus(i)">

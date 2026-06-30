@@ -12,6 +12,7 @@ import {
   Vaca,
   VacaFormData,
 } from '../../core/models/vaca.model';
+import { TipoSemen, TIPO_SEMEN_LABELS } from '../../core/models/inseminacao.model';
 import {
   ehPrenha,
   emProtocoloAtivo,
@@ -50,6 +51,8 @@ interface WizardCadastro {
   data_parto: string | null;
   situacao: SituacaoWizard | null;
   data_inseminacao: string | null;
+  boi: string;
+  tipo_semen: TipoSemen | null;
   data_inicio_protocolo: string | null;
   dias_protocolo: 10 | 11;
 }
@@ -98,6 +101,7 @@ export class VacasComponent implements OnInit {
 
   readonly statusOptions = STATUS_OPTIONS;
   readonly statusLabels = STATUS_LABELS;
+  readonly tipoSemenLabels = TIPO_SEMEN_LABELS;
 
   constructor(
     private vacaService: VacaService,
@@ -209,6 +213,8 @@ export class VacasComponent implements OnInit {
       data_parto: null,
       situacao: null,
       data_inseminacao: null,
+      boi: '',
+      tipo_semen: null,
       data_inicio_protocolo: null,
       dias_protocolo: 11,
     };
@@ -298,6 +304,10 @@ export class VacasComponent implements OnInit {
 
   selecionarSituacao(id: SituacaoWizard): void {
     this.wizard.situacao = id;
+    if (id !== 'prenha_lactacao') {
+      this.wizard.boi = '';
+      this.wizard.tipo_semen = null;
+    }
     this.wizardErro = '';
   }
 
@@ -340,6 +350,16 @@ export class VacasComponent implements OnInit {
       ) {
         this.wizardErro = 'Informe a data da inseminação.';
         return false;
+      }
+      if (this.wizard.situacao === 'prenha_lactacao') {
+        if (!this.wizard.boi.trim()) {
+          this.wizardErro = 'Informe o boi usado na inseminação.';
+          return false;
+        }
+        if (!this.wizard.tipo_semen) {
+          this.wizardErro = 'Selecione o tipo de sêmen (sexado ou convencional).';
+          return false;
+        }
       }
       if (this.wizard.situacao === 'protocolo' && !this.wizard.data_inicio_protocolo) {
         this.wizardErro = 'Informe o início do protocolo.';
@@ -430,6 +450,19 @@ export class VacasComponent implements OnInit {
           },
           { ...vaca, ...form } as Vaca
         );
+      }
+
+      if (
+        this.wizard.situacao === 'prenha_lactacao' &&
+        this.wizard.data_inseminacao &&
+        this.wizard.tipo_semen
+      ) {
+        await this.inseminacaoService.registrarPrenhezConfirmada({
+          vaca_id: vaca.id,
+          data_inseminacao: this.wizard.data_inseminacao,
+          touro: this.wizard.boi.trim(),
+          tipo_semen: this.wizard.tipo_semen,
+        });
       }
 
       this.fecharModal();

@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InseminacaoService } from '../../core/services/inseminacao.service';
 import { VacaService } from '../../core/services/vaca.service';
-import { Inseminacao } from '../../core/models/inseminacao.model';
+import { Inseminacao, TIPO_SEMEN_LABELS } from '../../core/models/inseminacao.model';
 import { Vaca } from '../../core/models/vaca.model';
 import { addDays, formatDateBR, todayISO, daysFromToday } from '../../core/utils/date.utils';
 import { DIAS_VERIFICAR_PRENHEZ } from '../../core/utils/ciclo-vaca.utils';
@@ -71,6 +71,7 @@ export class InseminacoesComponent implements OnInit {
   }
 
   formatDate = formatDateBR;
+  readonly tipoSemenLabels = TIPO_SEMEN_LABELS;
 
   ePendenteVerificacao(i: Inseminacao): boolean {
     if (i.confirmada_prenhez || i.repetiu_cio) return false;

@@ -570,6 +570,41 @@
   margin-top: 0.5rem;
 }
 
+.wizard-insem-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-light);
+
+  label {
+    display: block;
+    margin-bottom: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    input,
+    select {
+      display: block;
+      width: 100%;
+      margin-top: 0.4rem;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-family: inherit;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      background: var(--bg);
+    }
+  }
+}
+
 @media (max-width: 520px) {
   .wizard-progress-text {
     display: none;

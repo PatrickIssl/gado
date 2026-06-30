@@ -330,6 +330,29 @@
             </label>
           }
 
+          @if (wizard.situacao === 'prenha_lactacao') {
+            <div class="wizard-insem-extra">
+              <label>
+                Boi usado
+                <input
+                  [(ngModel)]="wizard.boi"
+                  name="wBoi"
+                  placeholder="Ex: Holando, Gir Leiteiro..."
+                  required
+                />
+              </label>
+              <label>
+                Tipo de sêmen
+                <select [(ngModel)]="wizard.tipo_semen" name="wTipoSemen" required>
+                  <option [ngValue]="null">Selecione...</option>
+                  <option value="sexado">Sexado</option>
+                  <option value="convencional">Convencional</option>
+                </select>
+                <small class="field-hint">Sexado ou convencional (inseminação)</small>
+              </label>
+            </div>
+          }
+
           @if (wizard.situacao === 'protocolo') {
             <label>
               Início do protocolo IATF
@@ -394,6 +417,18 @@
                 <span>Inseminação</span>
                 <strong>{{ formatDate(wizard.data_inseminacao) }}</strong>
               </div>
+            }
+            @if (wizard.situacao === 'prenha_lactacao' && wizard.boi) {
+              <div class="wizard-resumo-row">
+                <span>Boi usado</span>
+                <strong>{{ wizard.boi }}</strong>
+              </div>
+              @if (wizard.tipo_semen) {
+                <div class="wizard-resumo-row">
+                  <span>Tipo de sêmen</span>
+                  <strong>{{ tipoSemenLabels[wizard.tipo_semen] }}</strong>
+                </div>
+              }
             }
             @if (wizard.situacao === 'protocolo') {
               <div class="wizard-resumo-row">

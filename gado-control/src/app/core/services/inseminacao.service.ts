@@ -41,6 +41,8 @@ export class InseminacaoService {
         vaca_id: form.vaca_id,
         data_inseminacao: form.data_inseminacao,
         observacoes: form.observacoes ?? null,
+        touro: form.touro?.trim() || null,
+        tipo_semen: form.tipo_semen ?? null,
         repetiu_cio: false,
         confirmada_prenhez: false,
       })
@@ -64,6 +66,29 @@ export class InseminacaoService {
       })
       .eq('id', form.vaca_id);
 
+    return insem as Inseminacao;
+  }
+
+  /** Cadastro inicial com prenhez já confirmada (ex.: lactando e prenha no wizard). */
+  async registrarPrenhezConfirmada(
+    form: InseminacaoFormData & { touro: string; tipo_semen: NonNullable<InseminacaoFormData['tipo_semen']> }
+  ): Promise<Inseminacao> {
+    const { data: insem, error } = await this.supabase.db
+      .from('inseminacoes')
+      .insert({
+        fazenda_id: this.auth.requireFazendaId(),
+        vaca_id: form.vaca_id,
+        data_inseminacao: form.data_inseminacao,
+        observacoes: form.observacoes ?? 'Prenhez confirmada no cadastro',
+        touro: form.touro.trim(),
+        tipo_semen: form.tipo_semen,
+        repetiu_cio: false,
+        confirmada_prenhez: true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
     return insem as Inseminacao;
   }
 

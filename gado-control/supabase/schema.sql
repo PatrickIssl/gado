@@ -1,7 +1,7 @@
 -- GadoControl - Schema Supabase (com autenticação e multi-tenancy por fazenda)
 -- Execute no SQL Editor do Supabase (https://supabase.com/dashboard)
 -- Depois rode: migration_prenhez, migration_cios_protocolo, migration_saude_prenhezes,
---              migration_brucelose, migration_auth_fazenda (se partindo de install antigo)
+--              migration_brucelose, migration_auth_fazenda, migration_semen_touro
 
 -- -----------------------------------------------------------------------------
 -- Instituição (Fazenda) e perfil do usuário
@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS inseminacoes (
   repetiu_cio BOOLEAN DEFAULT FALSE,
   confirmada_prenhez BOOLEAN DEFAULT FALSE,
   observacoes TEXT,
+  touro TEXT,
+  tipo_semen TEXT CHECK (tipo_semen IS NULL OR tipo_semen IN ('sexado', 'convencional')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
