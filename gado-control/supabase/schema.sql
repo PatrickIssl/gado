@@ -1,7 +1,7 @@
 -- GadoControl - Schema Supabase (com autenticação e multi-tenancy por fazenda)
 -- Execute no SQL Editor do Supabase (https://supabase.com/dashboard)
 -- Depois rode: migration_prenhez, migration_cios_protocolo, migration_saude_prenhezes,
---              migration_brucelose, migration_auth_fazenda, migration_semen_touro
+--              migration_brucelose, migration_auth_fazenda, migration_semen_touro, migration_aborto, migration_brinco_bezerro
 
 -- -----------------------------------------------------------------------------
 -- Instituição (Fazenda) e perfil do usuário
@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS vacas (
   status TEXT NOT NULL DEFAULT 'vazia'
     CHECK (status IN ('vazia', 'prenha', 'lactacao', 'seca', 'pre_parto', 'em_protocolo_iatf')),
   data_parto DATE,
+  data_aborto DATE,
   data_ultima_inseminacao DATE,
   data_inseminacao_prenhez DATE,
   data_inicio_protocolo_iatf DATE,
@@ -74,6 +75,7 @@ CREATE TABLE IF NOT EXISTS bezerros (
   fazenda_id UUID NOT NULL REFERENCES fazendas(id) ON DELETE CASCADE,
   vaca_id UUID NOT NULL REFERENCES vacas(id) ON DELETE CASCADE,
   nome TEXT NOT NULL,
+  numero_brinco TEXT,
   sexo TEXT NOT NULL CHECK (sexo IN ('macho', 'femea')),
   data_nascimento DATE NOT NULL,
   desmamado BOOLEAN DEFAULT FALSE,

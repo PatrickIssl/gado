@@ -2,6 +2,7 @@ export interface Bezerro {
   id: string;
   vaca_id: string;
   nome: string;
+  numero_brinco: string | null;
   sexo: 'macho' | 'femea';
   data_nascimento: string;
   desmamado: boolean;
@@ -12,6 +13,7 @@ export interface Bezerro {
 
 export interface BezerroFormData {
   nome: string;
+  numero_brinco: string;
   sexo: 'macho' | 'femea';
   data_nascimento: string;
 }

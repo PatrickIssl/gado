@@ -18,7 +18,7 @@ import {
   programaLeiteAtual,
   estaDesmamado,
 } from '../../core/utils/bezerro.utils';
-import { addDays, formatDateBR, todayISO } from '../../core/utils/date.utils';
+import { formatDateBR, todayISO } from '../../core/utils/date.utils';
 
 @Component({
   selector: 'app-bezerros',
@@ -33,15 +33,17 @@ export class BezerrosComponent implements OnInit {
   loading = true;
   erro = '';
   filtro = 'todos';
-  modalCadastro = false;
+  modalForm = false;
   modalBrucelose = false;
   bezerroSelecionado: Bezerro | null = null;
+  editando: Bezerro | null = null;
   dataBruceloseForm = todayISO();
-  formCadastro = {
+  form = {
     vaca_id: '',
     nome: '',
+    numero_brinco: '',
     sexo: 'macho' as 'macho' | 'femea',
-    dias_vida: 0,
+    data_nascimento: todayISO(),
   };
 
   constructor(
@@ -86,6 +88,7 @@ export class BezerrosComponent implements OnInit {
   }
 
   formatDate = formatDateBR;
+  readonly hoje = todayISO;
   programaLeite = programaLeiteAtual;
   diasNoBezerreiro = diasNoBezerreiro;
   diasRestantes = diasRestantesBezerreiro;
@@ -98,6 +101,18 @@ export class BezerrosComponent implements OnInit {
   dataBrucelose = dataBrucelose;
   diasParaBrucelose = diasParaBrucelose;
   Math = Math;
+
+  textoDiasVida(dataNascimento: string): string {
+    const dias = diasNoBezerreiro(dataNascimento);
+    if (dias < 0) return 'Ainda não nasceu';
+    if (dias === 0) return 'Nasceu hoje';
+    if (dias === 1) return '1 dia';
+    return `${dias} dias`;
+  }
+
+  get tituloModalForm(): string {
+    return this.editando ? 'Editar Bezerro' : 'Cadastrar Bezerro';
+  }
 
   get filtrados(): Bezerro[] {
     if (this.filtro === 'bezerreiro') {
@@ -151,19 +166,39 @@ export class BezerrosComponent implements OnInit {
     }
   }
 
-  abrirCadastro(): void {
-    this.formCadastro = {
+  private formVazio(): typeof this.form {
+    return {
       vaca_id: this.vacas[0]?.id ?? '',
       nome: '',
+      numero_brinco: '',
       sexo: 'macho',
-      dias_vida: 0,
+      data_nascimento: todayISO(),
     };
-    this.modalCadastro = true;
+  }
+
+  abrirCadastro(): void {
+    this.editando = null;
+    this.form = this.formVazio();
+    this.modalForm = true;
     this.erro = '';
   }
 
-  fecharCadastro(): void {
-    this.modalCadastro = false;
+  abrirEditar(b: Bezerro): void {
+    this.editando = b;
+    this.form = {
+      vaca_id: b.vaca_id,
+      nome: b.nome,
+      numero_brinco: b.numero_brinco ?? '',
+      sexo: b.sexo,
+      data_nascimento: b.data_nascimento,
+    };
+    this.modalForm = true;
+    this.erro = '';
+  }
+
+  fecharForm(): void {
+    this.modalForm = false;
+    this.editando = null;
   }
 
   abrirBrucelose(b: Bezerro): void {
@@ -192,35 +227,46 @@ export class BezerrosComponent implements OnInit {
     }
   }
 
-  get dataNascimentoCalculada(): string {
-    const dias = Math.max(0, this.formCadastro.dias_vida ?? 0);
-    return addDays(todayISO(), -dias);
-  }
-
-  async salvarCadastro(): Promise<void> {
-    if (!this.formCadastro.vaca_id) {
+  async salvarForm(): Promise<void> {
+    if (!this.form.vaca_id) {
       this.erro = 'Selecione a vaca mãe.';
       return;
     }
-    if (!this.formCadastro.nome.trim()) {
+    if (!this.form.nome.trim()) {
       this.erro = 'Informe o nome do bezerro.';
       return;
     }
-    if (this.formCadastro.dias_vida < 0) {
-      this.erro = 'Os dias de vida não podem ser negativos.';
+    if (!this.form.numero_brinco.trim()) {
+      this.erro = 'Informe o número do brinco.';
       return;
     }
+    if (!this.form.data_nascimento) {
+      this.erro = 'Informe a data de nascimento.';
+      return;
+    }
+    if (this.form.data_nascimento > todayISO()) {
+      this.erro = 'A data de nascimento não pode ser no futuro.';
+      return;
+    }
+
+    const payload = {
+      vaca_id: this.form.vaca_id,
+      nome: this.form.nome.trim(),
+      numero_brinco: this.form.numero_brinco.trim(),
+      sexo: this.form.sexo,
+      data_nascimento: this.form.data_nascimento,
+    };
+
     try {
-      await this.bezerroService.criar({
-        vaca_id: this.formCadastro.vaca_id,
-        nome: this.formCadastro.nome.trim(),
-        sexo: this.formCadastro.sexo,
-        data_nascimento: this.dataNascimentoCalculada,
-      });
-      this.fecharCadastro();
+      if (this.editando) {
+        await this.bezerroService.atualizar(this.editando.id, payload);
+      } else {
+        await this.bezerroService.criar(payload);
+      }
+      this.fecharForm();
       await this.carregar();
     } catch {
-      this.erro = 'Erro ao cadastrar bezerro.';
+      this.erro = this.editando ? 'Erro ao atualizar bezerro.' : 'Erro ao cadastrar bezerro.';
     }
   }
 }

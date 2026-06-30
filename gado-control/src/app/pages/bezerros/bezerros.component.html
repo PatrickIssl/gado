@@ -70,18 +70,27 @@
               <div>
                 <strong class="card-name">{{ b.nome }}</strong>
                 <span class="card-meta">
+                  @if (b.numero_brinco) {
+                    Brinco #{{ b.numero_brinco }} ·
+                  }
                   {{ b.sexo === 'macho' ? 'Macho' : 'Fêmea' }} · Mãe: {{ nomeMae(b.vaca_id) }}
                 </span>
               </div>
             </div>
             <div class="card-actions">
+              <button class="btn-icon" title="Editar" (click)="abrirEditar(b)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
               @if (brucelosePendente(b)) {
                 <button class="btn btn-sm btn-primary" (click)="abrirBrucelose(b)">Registrar Brucelose</button>
               }
               @if (!estaDesmamado(b.data_nascimento) && !b.desmamado) {
                 <button class="btn btn-sm btn-outline" (click)="marcarDesmamado(b)">Desmamar</button>
               }
-              <button class="btn-icon danger" (click)="excluir(b)">
+              <button class="btn-icon danger" title="Excluir" (click)="excluir(b)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
@@ -104,8 +113,8 @@
 
           <div class="card-grid">
             <div class="info-item">
-              <span class="label">Nascimento</span>
-              <span>{{ formatDate(b.data_nascimento) }}</span>
+              <span class="label">Dias de vida</span>
+              <span>{{ textoDiasVida(b.data_nascimento) }}</span>
             </div>
             <div class="info-item">
               <span class="label">Saída do bezerreiro</span>
@@ -146,7 +155,7 @@
                   <span class="brucelose-badge brucelose-badge--pendente">Pendente</span>
                 </div>
                 <span class="brucelose-desc">
-                  Bezerra com {{ diasNoBezerreiro(b.data_nascimento) }} dias — vacina obrigatória
+                  Bezerra com {{ textoDiasVida(b.data_nascimento) }} — vacina obrigatória
                 </span>
               } @else {
                 <div class="brucelose-header">
@@ -165,17 +174,17 @@
   }
 </div>
 
-@if (modalCadastro) {
-  <div class="modal-overlay" (click)="fecharCadastro()">
+@if (modalForm) {
+  <div class="modal-overlay" (click)="fecharForm()">
     <div class="modal" (click)="$event.stopPropagation()">
-      <h2>Cadastrar Bezerro</h2>
+      <h2>{{ tituloModalForm }}</h2>
       <p class="modal-desc">
-        Informe quantos dias de vida o bezerro tem — a data de nascimento é calculada automaticamente.
+        Informe a data de nascimento — a idade em dias é calculada automaticamente.
       </p>
-      <form (ngSubmit)="salvarCadastro()">
+      <form (ngSubmit)="salvarForm()">
         <label>
           Vaca mãe
-          <select [(ngModel)]="formCadastro.vaca_id" name="vacaMae" required>
+          <select [(ngModel)]="form.vaca_id" name="vacaMae" required>
             <option value="" disabled>Selecione...</option>
             @for (v of vacas; track v.id) {
               <option [value]="v.id">#{{ v.numero }} — {{ v.nome }}</option>
@@ -183,35 +192,45 @@
           </select>
         </label>
         <label>
+          Número do brinco
+          <input
+            [(ngModel)]="form.numero_brinco"
+            name="numeroBrinco"
+            required
+            placeholder="Ex: 4521"
+          />
+        </label>
+        <label>
           Nome do bezerro
-          <input [(ngModel)]="formCadastro.nome" name="nomeBezerro" required placeholder="Ex: Trovão" />
+          <input [(ngModel)]="form.nome" name="nomeBezerro" required placeholder="Ex: Trovão" />
         </label>
         <label>
           Sexo
-          <select [(ngModel)]="formCadastro.sexo" name="sexoBezerro">
+          <select [(ngModel)]="form.sexo" name="sexoBezerro">
             <option value="macho">Macho</option>
             <option value="femea">Fêmea</option>
           </select>
         </label>
         <label>
-          Dias de vida
+          Data de nascimento
           <input
-            type="number"
-            min="0"
-            max="365"
-            [(ngModel)]="formCadastro.dias_vida"
-            name="diasVida"
+            type="date"
+            [(ngModel)]="form.data_nascimento"
+            name="dataNascimento"
+            [max]="hoje()"
             required
           />
-          <small class="field-hint">0 = nasceu hoje · 15 = nasceu há 15 dias</small>
+          <small class="field-hint">Use a data real do nascimento</small>
         </label>
-        <div class="nascimento-preview">
-          <span>Data de nascimento</span>
-          <strong>{{ formatDate(dataNascimentoCalculada) }}</strong>
-        </div>
+        @if (form.data_nascimento) {
+          <div class="nascimento-preview">
+            <span>Idade hoje</span>
+            <strong>{{ textoDiasVida(form.data_nascimento) }}</strong>
+          </div>
+        }
         <div class="modal-actions">
-          <button type="button" class="btn btn-outline" (click)="fecharCadastro()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
+          <button type="button" class="btn btn-outline" (click)="fecharForm()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">{{ editando ? 'Salvar' : 'Cadastrar' }}</button>
         </div>
       </form>
     </div>
@@ -223,8 +242,11 @@
     <div class="modal" (click)="$event.stopPropagation()">
       <h2>Registrar Brucelose</h2>
       <p class="modal-desc">
-        Bezerra: <strong>{{ bezerroSelecionado.nome }}</strong> —
-        {{ diasNoBezerreiro(bezerroSelecionado.data_nascimento) }} dias de vida
+        Bezerra: <strong>{{ bezerroSelecionado.nome }}</strong>
+        @if (bezerroSelecionado.numero_brinco) {
+          (brinco #{{ bezerroSelecionado.numero_brinco }})
+        }
+        — {{ textoDiasVida(bezerroSelecionado.data_nascimento) }}
       </p>
       <form (ngSubmit)="confirmarBrucelose()">
         <label>

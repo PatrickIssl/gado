@@ -27,11 +27,33 @@ export class BezerroService {
         fazenda_id: this.auth.requireFazendaId(),
         vaca_id: form.vaca_id,
         nome: form.nome,
+        numero_brinco: form.numero_brinco.trim(),
         sexo: form.sexo,
         data_nascimento: form.data_nascimento,
         desmamado: false,
         brucelose_aplicada: false,
       })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Bezerro;
+  }
+
+  async atualizar(
+    id: string,
+    form: BezerroFormData & { vaca_id: string }
+  ): Promise<Bezerro> {
+    const { data, error } = await this.supabase.db
+      .from('bezerros')
+      .update({
+        vaca_id: form.vaca_id,
+        nome: form.nome,
+        numero_brinco: form.numero_brinco.trim(),
+        sexo: form.sexo,
+        data_nascimento: form.data_nascimento,
+      })
+      .eq('id', id)
       .select()
       .single();
 

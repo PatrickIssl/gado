@@ -89,6 +89,7 @@ export class VacaService {
       raca: form.raca ?? '',
       status: form.status,
       data_parto: form.data_parto || null,
+      data_aborto: form.data_aborto || null,
       data_inseminacao_prenhez: null,
       data_ultima_inseminacao: form.data_ultima_inseminacao || null,
       data_inicio_protocolo_iatf: null,
@@ -101,6 +102,7 @@ export class VacaService {
     if (form.status === 'prenha' && form.data_inseminacao_prenhez) {
       payload['data_inseminacao_prenhez'] = form.data_inseminacao_prenhez;
       payload['data_ultima_inseminacao'] = form.data_inseminacao_prenhez;
+      payload['data_aborto'] = null;
     }
 
     if (form.status === 'em_protocolo_iatf') {
@@ -130,6 +132,7 @@ export class VacaService {
       .update({
         data_parto: todayISO(),
         status: 'lactacao' as StatusVaca,
+        data_aborto: null,
         data_inseminacao_prenhez: null,
         data_ultima_inseminacao: null,
         data_inicio_protocolo_iatf: null,

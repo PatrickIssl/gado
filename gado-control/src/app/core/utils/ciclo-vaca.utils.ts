@@ -52,6 +52,36 @@ export function protocoloEncerradoPendenteInseminacao(vaca: Vaca): boolean {
   return true;
 }
 
+function calcularDataInseminar40d(vaca: Vaca, prenha: boolean): string | null {
+  if (prenha) return null;
+
+  const porParto = vaca.data_parto
+    ? addDays(vaca.data_parto, DIAS_APOS_PARTO_INSEMINAR)
+    : null;
+  const porAborto = vaca.data_aborto
+    ? addDays(vaca.data_aborto, DIAS_APOS_PARTO_INSEMINAR)
+    : null;
+
+  if (porAborto && porParto) {
+    return porAborto > porParto ? porAborto : porParto;
+  }
+  return porAborto ?? porParto;
+}
+
+export function usaReferenciaAbortoParaInseminar(vaca: Vaca): boolean {
+  if (!vaca.data_aborto || ehPrenha(vaca)) return false;
+  if (!vaca.data_parto) return true;
+  const porAborto = addDays(vaca.data_aborto, DIAS_APOS_PARTO_INSEMINAR);
+  const porParto = addDays(vaca.data_parto, DIAS_APOS_PARTO_INSEMINAR);
+  return porAborto >= porParto;
+}
+
+export function labelInseminar40d(vaca: Vaca): string {
+  return usaReferenciaAbortoParaInseminar(vaca)
+    ? 'Inseminar (40d pós-aborto)'
+    : 'Inseminar (40d pós-parto)';
+}
+
 export function calcularDatasCiclo(vaca: Vaca): DatasCiclo {
   const dataInsemPrenhez =
     vaca.data_inseminacao_prenhez ??
@@ -71,7 +101,10 @@ export function calcularDatasCiclo(vaca: Vaca): DatasCiclo {
 
   if (vaca.data_parto) {
     fimLactacao = addMonths(vaca.data_parto, MESES_LACTACAO);
-    dataInseminar = addDays(vaca.data_parto, DIAS_APOS_PARTO_INSEMINAR);
+  }
+
+  if (!prenha) {
+    dataInseminar = calcularDataInseminar40d(vaca, false);
   }
 
   if (prenha && dataInsemPrenhez) {
@@ -182,6 +215,10 @@ export function montarLinhasDatas(vaca: Vaca): LinhaData[] {
     linhas.push({ id: 'ultimo_parto', label: 'Último parto', data: datas.ultimoParto });
   }
 
+  if (vaca.data_aborto) {
+    linhas.push({ id: 'aborto', label: 'Aborto', data: vaca.data_aborto });
+  }
+
   if (emProtocoloAtivo(vaca)) {
     const fim = dataFimProtocoloIatf(vaca)!;
     linhas.push({
@@ -199,7 +236,7 @@ export function montarLinhasDatas(vaca: Vaca): LinhaData[] {
       id: 'inseminar',
       label: protocoloEncerradoPendenteInseminacao(vaca)
         ? 'Inseminar (após protocolo)'
-        : 'Inseminar (40d pós-parto)',
+        : labelInseminar40d(vaca),
       data: podeInsem && cio ? cio : datas.dataInseminar,
       destaque: podeInsem || podeProtocolo ? 'action' : undefined,
       mostrarBotaoInseminar: podeInsem,
@@ -312,7 +349,9 @@ export function montarResumoVaca(vaca: Vaca): VacaResumoVisual {
   } else if (datas.dataInseminar && !passouPrazoInseminar(vaca, datas)) {
     proximaAcao = {
       id: 'inseminar',
-      titulo: 'Inseminar após parto',
+      titulo: usaReferenciaAbortoParaInseminar(vaca)
+        ? 'Inseminar após aborto'
+        : 'Inseminar após parto',
       data: datas.dataInseminar,
       variante: 'neutral',
     };

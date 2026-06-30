@@ -25,6 +25,7 @@ import {
   statusesExibicao,
   textoDiasRelativo,
   ultimoCio,
+  dataInseminacaoAposParto,
 } from '../../core/utils/ciclo-vaca.utils';
 import { formatDateBR, todayISO } from '../../core/utils/date.utils';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
@@ -34,6 +35,7 @@ type ModalTipo = 'criar' | 'editar' | 'parto' | 'inseminacao' | 'protocolo' | nu
 type SituacaoWizard =
   | 'lactacao'
   | 'prenha_lactacao'
+  | 'aborto_lactacao'
   | 'aguardando_prenhez'
   | 'protocolo'
   | 'vazia'
@@ -51,6 +53,7 @@ interface WizardCadastro {
   data_parto: string | null;
   situacao: SituacaoWizard | null;
   data_inseminacao: string | null;
+  data_aborto: string | null;
   boi: string;
   tipo_semen: TipoSemen | null;
   data_inicio_protocolo: string | null;
@@ -84,13 +87,14 @@ export class VacasComponent implements OnInit {
     data_parto: null,
     data_inseminacao_prenhez: null,
     data_ultima_inseminacao: null,
+    data_aborto: null,
     data_inicio_protocolo_iatf: null,
     dias_protocolo_iatf: null,
     total_prenhezes: 0,
     doente: false,
     doenca: null,
   };
-  formBezerro = { nome: '', sexo: 'macho' as 'macho' | 'femea' };
+  formBezerro = { nome: '', numero_brinco: '', sexo: 'macho' as 'macho' | 'femea' };
   formInseminacao = { data_inseminacao: todayISO(), observacoes: '' };
   diasProtocolo: 10 | 11 = 11;
 
@@ -213,6 +217,7 @@ export class VacasComponent implements OnInit {
       data_parto: null,
       situacao: null,
       data_inseminacao: null,
+      data_aborto: null,
       boi: '',
       tipo_semen: null,
       data_inicio_protocolo: null,
@@ -247,6 +252,12 @@ export class VacasComponent implements OnInit {
         titulo: 'Lactando e prenha',
         desc: 'Melhor cenário: leite + gestação confirmada',
         icon: '🥛🤰',
+      },
+      {
+        id: 'aborto_lactacao',
+        titulo: 'Abortou — ainda em lactação',
+        desc: 'Perdeu a gestação, continua dando leite; 40 dias para IA a partir do aborto',
+        icon: '⚠️🥛',
       },
       {
         id: 'aguardando_prenhez',
@@ -308,7 +319,15 @@ export class VacasComponent implements OnInit {
       this.wizard.boi = '';
       this.wizard.tipo_semen = null;
     }
+    if (id !== 'aborto_lactacao') {
+      this.wizard.data_aborto = null;
+    }
     this.wizardErro = '';
+  }
+
+  previewInseminarAposAborto(): string | null {
+    if (!this.wizard.data_aborto) return null;
+    return dataInseminacaoAposParto(this.wizard.data_aborto);
   }
 
   validarWizardStep(step: number): boolean {
@@ -365,6 +384,16 @@ export class VacasComponent implements OnInit {
         this.wizardErro = 'Informe o início do protocolo.';
         return false;
       }
+      if (this.wizard.situacao === 'aborto_lactacao') {
+        if (!this.wizard.data_aborto) {
+          this.wizardErro = 'Informe a data do aborto.';
+          return false;
+        }
+        if (this.wizard.data_parto && this.wizard.data_aborto < this.wizard.data_parto) {
+          this.wizardErro = 'A data do aborto deve ser posterior ao último parto.';
+          return false;
+        }
+      }
       return true;
     }
     return true;
@@ -374,6 +403,7 @@ export class VacasComponent implements OnInit {
     const map: Record<SituacaoWizard, string> = {
       lactacao: 'Em lactação',
       prenha_lactacao: 'Lactando e prenha',
+      aborto_lactacao: 'Abortou — em lactação (aguardando 40d para IA)',
       aguardando_prenhez: 'Inseminada — aguardando verificar prenhez',
       protocolo: 'Em protocolo IATF',
       vazia: 'Vazia / novilha',
@@ -391,6 +421,7 @@ export class VacasComponent implements OnInit {
       raca: w.raca.trim(),
       status: 'vazia',
       data_parto: w.teveParto ? w.data_parto : null,
+      data_aborto: null,
       data_inseminacao_prenhez: null,
       data_ultima_inseminacao: null,
       data_inicio_protocolo_iatf: null,
@@ -403,6 +434,10 @@ export class VacasComponent implements OnInit {
     switch (w.situacao) {
       case 'lactacao':
         form.status = 'lactacao';
+        break;
+      case 'aborto_lactacao':
+        form.status = 'lactacao';
+        form.data_aborto = w.data_aborto;
         break;
       case 'prenha_lactacao':
         form.status = 'prenha';
@@ -491,6 +526,7 @@ export class VacasComponent implements OnInit {
       raca: vaca.raca,
       status: vaca.status,
       data_parto: vaca.data_parto,
+      data_aborto: vaca.data_aborto,
       data_inseminacao_prenhez: vaca.data_inseminacao_prenhez,
       data_ultima_inseminacao: vaca.data_ultima_inseminacao,
       data_inicio_protocolo_iatf: vaca.data_inicio_protocolo_iatf,
@@ -505,7 +541,7 @@ export class VacasComponent implements OnInit {
   abrirParto(vaca: Vaca): void {
     if (vaca.status !== 'prenha') return;
     this.vacaSelecionada = vaca;
-    this.formBezerro = { nome: '', sexo: 'macho' };
+    this.formBezerro = { nome: '', numero_brinco: '', sexo: 'macho' };
     this.modal = 'parto';
   }
 
@@ -552,12 +588,17 @@ export class VacasComponent implements OnInit {
   }
 
   async confirmarParto(): Promise<void> {
-    if (!this.vacaSelecionada || !this.formBezerro.nome) return;
+    if (!this.vacaSelecionada || !this.formBezerro.nome.trim()) return;
+    if (!this.formBezerro.numero_brinco.trim()) {
+      this.erro = 'Informe o número do brinco do bezerro.';
+      return;
+    }
     try {
       const vaca = await this.vacaService.registrarParto(this.vacaSelecionada.id);
       await this.bezerroService.criar({
         vaca_id: vaca.id,
-        nome: this.formBezerro.nome,
+        nome: this.formBezerro.nome.trim(),
+        numero_brinco: this.formBezerro.numero_brinco.trim(),
         sexo: this.formBezerro.sexo,
         data_nascimento: todayISO(),
       });

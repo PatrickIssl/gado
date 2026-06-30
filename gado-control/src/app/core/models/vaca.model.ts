@@ -13,6 +13,7 @@ export interface Vaca {
   raca: string;
   status: StatusVaca;
   data_parto: string | null;
+  data_aborto: string | null;
   data_ultima_inseminacao: string | null;
   data_inseminacao_prenhez: string | null;
   data_inicio_protocolo_iatf: string | null;
@@ -31,6 +32,7 @@ export interface VacaFormData {
   raca: string;
   status: StatusVaca;
   data_parto?: string | null;
+  data_aborto?: string | null;
   data_inseminacao_prenhez?: string | null;
   data_ultima_inseminacao?: string | null;
   data_inicio_protocolo_iatf?: string | null;

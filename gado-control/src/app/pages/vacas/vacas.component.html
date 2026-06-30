@@ -353,6 +353,22 @@
             </div>
           }
 
+          @if (wizard.situacao === 'aborto_lactacao') {
+            <label>
+              Data do aborto
+              <input type="date" [(ngModel)]="wizard.data_aborto" name="wDataAborto" required />
+              <small class="field-hint">
+                Continua em lactação. Os 40 dias para nova inseminação começam nesta data.
+              </small>
+            </label>
+            @if (previewInseminarAposAborto(); as dataIA) {
+              <div class="wizard-aborto-preview">
+                <span>Liberada para IA a partir de</span>
+                <strong>{{ formatDate(dataIA) }}</strong>
+              </div>
+            }
+          }
+
           @if (wizard.situacao === 'protocolo') {
             <label>
               Início do protocolo IATF
@@ -430,6 +446,18 @@
                 </div>
               }
             }
+            @if (wizard.situacao === 'aborto_lactacao' && wizard.data_aborto) {
+              <div class="wizard-resumo-row">
+                <span>Aborto</span>
+                <strong>{{ formatDate(wizard.data_aborto) }}</strong>
+              </div>
+              @if (previewInseminarAposAborto(); as dataIA) {
+                <div class="wizard-resumo-row">
+                  <span>IA liberada em</span>
+                  <strong>{{ formatDate(dataIA) }}</strong>
+                </div>
+              }
+            }
             @if (wizard.situacao === 'protocolo') {
               <div class="wizard-resumo-row">
                 <span>Protocolo</span>
@@ -484,6 +512,11 @@
           Último parto
           <input type="date" [(ngModel)]="form.data_parto" name="dataParto" />
           <small class="field-hint">Opcional — inicia lactação de 7 meses e contagem dos 40 dias para IA</small>
+        </label>
+        <label>
+          Data do aborto
+          <input type="date" [(ngModel)]="form.data_aborto" name="dataAborto" />
+          <small class="field-hint">Se abortou em lactação — reinicia os 40 dias para IA (mantém a lactação)</small>
         </label>
         <label>
           Situação atual
@@ -563,6 +596,10 @@
         Vaca: <strong>{{ vacaSelecionada?.nome }}</strong> — cadastre o bezerro
       </p>
       <form (ngSubmit)="confirmarParto()">
+        <label>
+          Número do brinco
+          <input [(ngModel)]="formBezerro.numero_brinco" name="brincoBezerro" required placeholder="Ex: 4521" />
+        </label>
         <label>
           Nome do Bezerro
           <input [(ngModel)]="formBezerro.nome" name="nomeBezerro" required />
